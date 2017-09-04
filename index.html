@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>2-do List</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.5.1/css/bulma.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <section class="section">
+    <div class="container">
+      <h1 class="title has-text-centered">2-Do List</h1>
+      <div class="main">
+        <i id="toggle" class="fa fa-toggle-off"></i>
+        <input id="item-txt" type="text" placeholder="Add Item...">
+        <input id="date-txt" type="date" placeholder="DD/MM/YYYY">
+      </div>
+      <div class="list">
+        <ul>
+        </ul>
+      </div>
+      <ul class="lists" id="nav">
+        <li id="all">All</li>
+        <li id="active">Active</li>
+        <li id="completed">Completed</li>
+        <li id="urgent">Urgent</li>
+        <li id="expired">Expired</li>
+      </ul>
+    </div>
+  </section>
+  <script src="jquery.js"></script>
+</body>
+
+</html>
