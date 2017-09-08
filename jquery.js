@@ -49,58 +49,55 @@ model.toggleAll = function () {
   }).length;
 
   if (totalItems === completedItemsNum) {
-    $.each(this.items, function (item) {
+    this.items.forEach(function (item) {
       item.completed = false;
     });
   } else {
-    $.each(this.items, function (item) {
+    this.items.forEach(function (item) {
       item.completed = true;
     });
   }
 };
 
-view.view.viewState = 'All';
+view.viewState = 'All';
 
 view.displayItems = function () {
-  var counter = 0;
-  var counterComplete = 0;
-  var counterUrgent = 0;
-  var counterExpired = 0;
+  var counter = model.items
+        .filter(function (i) {
+          return !i.completed && dateUtils.isItemActive(i.itemDate);
+        }).length;
+  var counterComplete = model.items
+        .filter(function (i) {
+          return i.completed;
+        }).length;
+  var counterUrgent = model.items
+        .filter(function (i) {
+          return !i.completed && dateUtils.isItemUrgent(i.itemDate);
+        }).length;
+  var counterExpired = model.items
+        .filter(function (i) {
+          return !i.completed && dateUtils.isItemExpired(i.itemDate);
+        }).length;
+
+  $('#all').text(model.items.length > 0 ? model.items.length + ' All' : 'All');
+  $('#active').text(counter > 0 ? counter + ' Active' : 'Active');
+  $('#completed').text(counterComplete > 0 ? counterComplete + ' Completed' : 'Completed');
+  $('#expired').text(counterExpired > 0 ? counterExpired + ' Expired' : 'Expired');
+  $('#urgent').text(counterUrgent > 0 ? counterUrgent + ' Urgent' : 'Urgent');
+
   $('.list ul').html('');
-  $.each(model.items, function (item, pos) {
+
+  model.items.forEach(function (item, pos) {
     var showAll = view.viewState === 'All';
     var showActive = view.viewState === 'Active' && dateUtils.isItemActive(model.items[pos].itemDate);
-
     var showCompleted = view.viewState === 'Completed' && item.completed;
-
     var showUrgent = view.viewState === 'Urgent' && dateUtils.isItemUrgent(model.items[pos].itemDate);
-
     var showExpired = view.viewState === 'Expired' && dateUtils.isItemExpired(model.items[pos].itemDate);
 
     if (showAll || showActive || showCompleted || showUrgent || showExpired) {
       view.createItem(item, pos);
     }
-
-    if (!item.completed && dateUtils.isItemExpired(item.itemDate)) {
-      counterExpired += 1;
-    } else if (!item.completed && dateUtils.isItemUrgent(item.itemDate)) {
-      counterUrgent += 1;
-    } else if (!item.completed && dateUtils.isItemActive(item.itemDate)) {
-      counter += 1;
-    } else if (item.completed) {
-      counterComplete += 1;
-    }
   });
-
-  $('#all').text(model.items.length > 0 ? model.items.length + ' All' : 'All');
-
-  $('#active').text(counter > 0 ? counter + ' Active' : 'Active');
-
-  $('#completed').text(counterComplete > 0 ? counterComplete + ' Completed' : 'Completed');
-
-  $('#expired').text(counterExpired > 0 ? counterExpired + ' Expired' : 'Expired');
-
-  $('#urgent').text(counterUrgent > 0 ? counterUrgent + ' Urgent' : 'Urgent');
 };
 
 view.createDeleteBtn = function () {
@@ -110,49 +107,56 @@ view.createDeleteBtn = function () {
   return deleteBtn;
 };
 
-view.createItem = function (item, pos) {
-  var $list = $('.list ul');
-  var $li = $('<li></li>');
-  var $editBtn = $('<i></i>');
-  var $smol = $('<small></small>');
-  var $text = $('<span></span>');
-  var $itemIcon = $('<i></i>');
-  var dateText;
+view.createEditBtn = function () {
+  var $editBtn = $('<i id="edit" class="fa fa-pencil-square-o"></i>');
+  return $editBtn;
+};
 
-  $editBtn.addClass('fa fa-pencil-square-o');
-  $editBtn.attr('id', 'edit');
+view.createDateTxt = function (item) {
+  var $dateTxt = $('<small></small>');
+  var dueDate = moment(item.itemDate, 'DD-MM-YYYY')
+        .startOf('day')
+        .from(dateUtils.today().startOf('day'));
+  if (item.completed || this.viewState === 'Expired') {
+    $dateTxt.addClass('strike');
+  }
+  $dateTxt.text(dueDate);
+  if ($dateTxt.text() === 'a few seconds ago') {
+    $dateTxt.text('Today');
+  }
+  return $dateTxt;
+};
+
+view.createItemIcon = function (item) {
+  var $itemIcon = $('<i id="false" class="fa fa-circle-o"></i>');
   if (item.completed) {
-    $itemIcon.addClass('fa fa-check-circle-o');
+    $itemIcon.toggleClass('fa-circle-o fa-check-circle-o');
     $itemIcon.attr('id', 'true');
-    $text.addClass('strike');
-    $smol.addClass('strike');
-  } else {
-    $itemIcon.addClass('fa fa-circle-o');
-    $itemIcon.attr('id', 'false');
-  }
-
-  if (view.viewState === 'Urgent') {
-    $itemIcon.addClass('fa fa-exclamation-triangle');
+  } else if (view.viewState === 'Urgent') {
+    $itemIcon.addClass('fa-exclamation-triangle').removeClass('fa-circle-o');
   } else if (view.viewState === 'Expired') {
-    $text.addClass('strike');
-    $smol.addClass('strike');
-    $itemIcon.addClass('fa fa-exclamation');
+    $itemIcon.addClass('fa-exclamation');
   }
-  $li.attr('id', pos);
-  $text.text(item.itemText);
+  return $itemIcon;
+};
 
-  dateText = moment(item.itemDate, 'DD-MM-YYYY')
-    .startOf('day')
-    .from(dateUtils.today().startOf('day'));
-  $smol.text(dateText);
-  if ($smol.text() === 'a few seconds ago') {
-    $smol.text('Today');
+view.createItemTxt = function (item) {
+  var $itemTxt = $('<span></span>');
+  if (item.completed || view.viewState === 'Expired') {
+    $itemTxt.addClass('strike');
   }
-  $list.append($li);
-  $($li.first()).before($itemIcon);
-  $li.append($text);
-  $li.append($smol);
-  $li.append($editBtn);
+  $itemTxt.text(item.itemText);
+  return $itemTxt;
+};
+
+view.createItem = function (item, pos) {
+  var $li = $('<li></li>');
+  $li.attr('id', pos);
+  $('.list ul').append($li);
+  $($li.first()).before(this.createItemIcon(item));
+  $li.append(this.createItemTxt(item));
+  $li.append(this.createDateTxt(item));
+  $li.append(this.createEditBtn());
   $li.append(this.createDeleteBtn());
 };
 
@@ -191,7 +195,7 @@ view.createSaveBtn = function (pos) {
 };
 
 view.enterListener = function () {
-  function enterPress(e) {
+  var enterPress = function (e) {
     if (e.which === 13 || e.keyCode === 13) {
       if ($('#item-txt').val() === '') {
         alert('Please enter a valid 2-Do');
@@ -201,24 +205,49 @@ view.enterListener = function () {
         handlers.addItem();
       }
     }
-  }
+  };
   $('#item-txt').on('keypress', enterPress);
   $('#date-txt').on('keypress', enterPress);
+};
+
+view.colorState = function () {
+  $('#nav').children().each(function () {
+    $(this).css({ 'background-color': '#fff' });
+  });
+};
+
+view.toggleStates = function () {
+  var stateToggle = function (e) {
+    var elementClicked = e.target;
+    view.colorState();
+    if (elementClicked.id === 'all') {
+      view.viewState = 'All';
+    } else if (elementClicked.id === 'active') {
+      view.viewState = 'Active';
+    } else if (elementClicked.id === 'completed') {
+      view.viewState = 'Completed';
+    } else if (elementClicked.id === 'urgent') {
+      view.viewState = 'Urgent';
+    } else if (elementClicked.id === 'expired') {
+      view.viewState = 'Expired';
+    }
+    elementClicked.style.backgroundColor = '#aaa3';
+    view.displayItems();
+  };
+  $('#nav').on('click', stateToggle);
 };
 
 view.setUpEvents = function () {
   $('.list ul').on('click', function (event) {
     var clickedElm = event.target;
-    var elmID = clickedElm.id;
-    var itemID = clickedElm.parentNode.id;
-    if (elmID === 'delete') {
-      handlers.deleteItem(itemID);
-    } else if (elmID === 'false' || elmID === 'true') {
-      handlers.toggleComplete(itemID);
-    } else if (elmID === 'edit') {
-      handlers.changeItem(itemID);
-    } else if (elmID === 'save') {
-      handlers.saveItem(itemID);
+    if (clickedElm.id === 'delete') {
+      handlers.deleteItem(clickedElm.parentNode.id);
+    } else if (clickedElm.id === 'false' || clickedElm.id === 'true') {
+      handlers.toggleComplete(clickedElm.parentNode.id);
+    } else if (clickedElm.id === 'edit') {
+      handlers.changeItem(clickedElm.parentNode.id);
+    } else if (clickedElm.id === 'save') {
+      handlers.saveItem(clickedElm.parentNode.id);
     }
   });
   $('#toggle').click(function () {
@@ -227,11 +256,11 @@ view.setUpEvents = function () {
 };
 
 handlers.addItem = function () {
-  var $inputText = $('#item-txt').val();
-  var $inputDate = $('#date-txt').val();
-  model.addItem($inputText, $inputDate);
-  $inputText = '';
-  $inputDate = '';
+  var $inputText = $('#item-txt');
+  var $inputDate = $('#date-txt');
+  model.addItem($inputText.val(), $inputDate.val());
+  $inputText.val('');
+  $inputDate.val('');
   view.displayItems();
 };
 
@@ -241,19 +270,19 @@ handlers.changeItem = function (pos) {
   $itemID.append(view.createInputField(pos));
   $itemID.append(view.createDateField(pos));
   $itemID.append(view.createSaveBtn(pos));
-  $itemID.append(view.createDeletBtn());
+  $itemID.append(view.createDeleteBtn());
 };
 
 handlers.saveItem = function (pos) {
-  var $editInput = $('pos').find('.edit-txt').val();
-  var $editDate = $('pos').find('.edit-date').val();
+  var editInputTxt = $('pos').find('.edit-txt').val();
+  var editInputDate = $('pos').find('.edit-date').val();
 
-  if ($editInput === '') {
+  if (editInputTxt === '') {
     alert('Please enter a valid 2-do item');
-  } else if (!dateUtils.isValidDate($editDate)) {
+  } else if (!dateUtils.isValidDate(editInputDate)) {
     alert('Please enter a valid date');
   } else {
-    model.changeItem(pos, $editInput, $editDate);
+    model.changeItem(pos, editInputTxt, editInputDate);
     view.displayItems();
   }
 };
