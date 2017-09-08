@@ -265,7 +265,7 @@ handlers.addItem = function () {
 };
 
 handlers.changeItem = function (pos) {
-  var $itemID = $('pos');
+  var $itemID = $('#' + pos);
   $itemID.html('');
   $itemID.append(view.createInputField(pos));
   $itemID.append(view.createDateField(pos));
@@ -274,8 +274,8 @@ handlers.changeItem = function (pos) {
 };
 
 handlers.saveItem = function (pos) {
-  var editInputTxt = $('pos').find('.edit-txt').val();
-  var editInputDate = $('pos').find('.edit-date').val();
+  var editInputTxt = $('#' + pos).find('.edit-txt').val();
+  var editInputDate = $('#' + pos).find('.edit-date').val();
 
   if (editInputTxt === '') {
     alert('Please enter a valid 2-do item');
