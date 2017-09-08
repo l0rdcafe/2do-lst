@@ -1,7 +1,6 @@
 var model = {};
 var view = {};
 var handlers = {};
-var viewState = 'All';
 var dateUtils = {
   today: function () {
     return moment();
@@ -60,30 +59,27 @@ model.toggleAll = function () {
   }
 };
 
+view.view.viewState = 'All';
+
 view.displayItems = function () {
-  var $list = $('.list ul');
   var counter = 0;
   var counterComplete = 0;
   var counterUrgent = 0;
   var counterExpired = 0;
-  var allText;
-  var activeText;
-  var completeText;
-  var urgentText;
-  var expiredText;
-  $list.html('');
+  $('.list ul').html('');
   $.each(model.items, function (item, pos) {
-    var showAll = viewState === 'All';
-    var showActive =
-      viewState === 'Active' &&
-      dateUtils.isItemActive(model.items[pos].itemDate);
-    var showCompleted = viewState === 'Completed' && item.completed;
-    var showUrgent =
-      viewState === 'Urgent' &&
-      dateUtils.isItemUrgent(model.items[pos].itemDate);
-    var showExpired =
-      viewState === 'Expired' &&
-      dateUtils.isItemExpired(model.items[pos].itemDate);
+    var showAll = view.viewState === 'All';
+    var showActive = view.viewState === 'Active' && dateUtils.isItemActive(model.items[pos].itemDate);
+
+    var showCompleted = view.viewState === 'Completed' && item.completed;
+
+    var showUrgent = view.viewState === 'Urgent' && dateUtils.isItemUrgent(model.items[pos].itemDate);
+
+    var showExpired = view.viewState === 'Expired' && dateUtils.isItemExpired(model.items[pos].itemDate);
+
+    if (showAll || showActive || showCompleted || showUrgent || showExpired) {
+      view.createItem(item, pos);
+    }
 
     if (!item.completed && dateUtils.isItemExpired(item.itemDate)) {
       counterExpired += 1;
@@ -94,27 +90,17 @@ view.displayItems = function () {
     } else if (item.completed) {
       counterComplete += 1;
     }
-
-    if (showAll || showActive || showCompleted || showUrgent || showExpired) {
-      view.createItem(item, pos);
-    }
   });
 
-  allText = model.items.length > 0 ? model.items.length + ' All' : 'All';
-  $('#all').text(allText);
+  $('#all').text(model.items.length > 0 ? model.items.length + ' All' : 'All');
 
-  activeText = counter > 0 ? counter + ' Active' : 'Active';
-  $('#active').text(activeText);
+  $('#active').text(counter > 0 ? counter + ' Active' : 'Active');
 
-  completeText =
-    counterComplete > 0 ? counterComplete + ' Completed' : 'Completed';
-  $('#completed').text(completeText);
+  $('#completed').text(counterComplete > 0 ? counterComplete + ' Completed' : 'Completed');
 
-  expiredText = counterExpired > 0 ? counterExpired + ' Expired' : 'Expired';
-  $('#expired').text(expiredText);
+  $('#expired').text(counterExpired > 0 ? counterExpired + ' Expired' : 'Expired');
 
-  urgentText = counterUrgent > 0 ? counterUrgent + ' Urgent' : 'Urgent';
-  $('#urgent').text(urgentText);
+  $('#urgent').text(counterUrgent > 0 ? counterUrgent + ' Urgent' : 'Urgent');
 };
 
 view.createDeleteBtn = function () {
@@ -145,9 +131,9 @@ view.createItem = function (item, pos) {
     $itemIcon.attr('id', 'false');
   }
 
-  if (viewState === 'Urgent') {
+  if (view.viewState === 'Urgent') {
     $itemIcon.addClass('fa fa-exclamation-triangle');
-  } else if (viewState === 'Expired') {
+  } else if (view.viewState === 'Expired') {
     $text.addClass('strike');
     $smol.addClass('strike');
     $itemIcon.addClass('fa fa-exclamation');
@@ -227,11 +213,7 @@ view.setUpEvents = function () {
     var itemID = clickedElm.parentNode.id;
     if (elmID === 'delete') {
       handlers.deleteItem(itemID);
-    } else if (
-      elmID === 'false' ||
-      elmID === 'true' ||
-      model.items[itemID].completed
-    ) {
+    } else if (elmID === 'false' || elmID === 'true') {
       handlers.toggleComplete(itemID);
     } else if (elmID === 'edit') {
       handlers.changeItem(itemID);
