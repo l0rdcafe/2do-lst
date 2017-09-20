@@ -31,9 +31,9 @@ model.addItem = function (text, date) {
     itemText: text,
     itemDate: date,
     completed: false,
-    isActive: function () { return dateUtils.isAfterToday(this.itemDate); },
-    isUrgent: function () { return dateUtils.isToday(this.itemDate); },
-    isExpired: function () { return dateUtils.isBeforeToday(this.itemDate); }
+    isActive: function () { return dateUtils.isAfterToday(this.itemDate) && !this.completed; },
+    isUrgent: function () { return dateUtils.isToday(this.itemDate) && !this.completed; },
+    isExpired: function () { return dateUtils.isBeforeToday(this.itemDate) && !this.completed; }
   };
   this.items.push(item);
 };
@@ -100,10 +100,10 @@ view.displayItems = function () {
 
   model.items.forEach(function (item, pos) {
     var showAll = this.todoScreen === 'All';
-    var showActive = this.todoScreen === 'Active' && model.isActive(item) && !item.completed;
+    var showActive = this.todoScreen === 'Active' && model.isActive(item);
     var showCompleted = this.todoScreen === 'Completed' && item.completed;
-    var showUrgent = this.todoScreen === 'Urgent' && model.isUrgent(item) && !item.completed;
-    var showExpired = this.todoScreen === 'Expired' && model.isExpired(item) && !item.completed;
+    var showUrgent = this.todoScreen === 'Urgent' && model.isUrgent(item);
+    var showExpired = this.todoScreen === 'Expired' && model.isExpired(item);
 
     if (showAll || showActive || showCompleted || showUrgent || showExpired) {
       this.createItem(item, pos);
