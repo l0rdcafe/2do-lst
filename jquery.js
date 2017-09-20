@@ -106,11 +106,11 @@ view.displayItems = function () {
   $('.list ul').html('');
 
   model.items.forEach(function (item, pos) {
-    var showAll = view.todoScreen === 'All';
-    var showActive = view.todoScreen === 'Active' && model.isActive(item.itemDate) && !item.completed;
-    var showCompleted = view.todoScreen === 'Completed' && item.completed;
-    var showUrgent = view.todoScreen === 'Urgent' && model.isUrgent(item.itemDate) && !item.completed;
-    var showExpired = view.todoScreen === 'Expired' && model.isExpired(item.itemDate) && !item.completed;
+    var showAll = this.todoScreen === 'All';
+    var showActive = this.todoScreen === 'Active' && model.isActive(item.itemDate) && !item.completed;
+    var showCompleted = this.todoScreen === 'Completed' && item.completed;
+    var showUrgent = this.todoScreen === 'Urgent' && model.isUrgent(item.itemDate) && !item.completed;
+    var showExpired = this.todoScreen === 'Expired' && model.isExpired(item.itemDate) && !item.completed;
 
     if (showAll || showActive || showCompleted || showUrgent || showExpired) {
       this.createItem(item, pos);
