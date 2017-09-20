@@ -27,36 +27,29 @@ var dateUtils = {
 model.items = [];
 
 model.addItem = function (text, date) {
-  this.items.push({
+  var item = {
     itemText: text,
     itemDate: date,
-    completed: false
-  });
-};
-
-model.isActive = function (date) {
-  return dateUtils.isAfterToday(date);
-};
-
-model.isExpired = function (date) {
-  return dateUtils.isBeforeToday(date);
-};
-
-model.isUrgent = function (date) {
-  return dateUtils.isToday(date);
+    completed: false,
+    isActive: function () { return dateUtils.isAfterToday(this.itemDate); },
+    isUrgent: function () { return dateUtils.isToday(this.itemDate); },
+    isExpired: function () { return dateUtils.isBeforeToday(this.itemDate); }
+  };
+  this.items.push(item);
 };
 
 model.count = function (itemType) {
   var filters = {
-    expired: function (i) { return !i.completed && model.isExpired(i.itemDate); },
-    active: function (i) { return !i.completed && model.isActive(i.itemDate); },
-    urgent: function (i) { return !i.completed && model.isUrgent(i.itemDate); },
+    expired: function (i) { return !i.completed && i.isExpired(); },
+    active: function (i) { return !i.completed && i.isActive(); },
+    urgent: function (i) { return !i.completed && i.isUrgent(); },
     completed: function (i) { return i.completed; }
   };
 
   if (itemType in filters) {
     return this.items.filter(filters[itemType]).length;
   }
+  throw new Error(itemType + ' is not a correct filter');
 };
 
 model.changeItem = function (pos, text, date) {
@@ -107,10 +100,10 @@ view.displayItems = function () {
 
   model.items.forEach(function (item, pos) {
     var showAll = this.todoScreen === 'All';
-    var showActive = this.todoScreen === 'Active' && model.isActive(item.itemDate) && !item.completed;
+    var showActive = this.todoScreen === 'Active' && model.isActive(item) && !item.completed;
     var showCompleted = this.todoScreen === 'Completed' && item.completed;
-    var showUrgent = this.todoScreen === 'Urgent' && model.isUrgent(item.itemDate) && !item.completed;
-    var showExpired = this.todoScreen === 'Expired' && model.isExpired(item.itemDate) && !item.completed;
+    var showUrgent = this.todoScreen === 'Urgent' && model.isUrgent(item) && !item.completed;
+    var showExpired = this.todoScreen === 'Expired' && model.isExpired(item) && !item.completed;
 
     if (showAll || showActive || showCompleted || showUrgent || showExpired) {
       this.createItem(item, pos);
@@ -298,6 +291,9 @@ handlers.toggleAll = function () {
   view.displayItems();
 };
 
-view.setUpEvents();
-view.enterListener();
-view.toggleStates();
+$(document).ready(function () {
+  view.setUpEvents();
+  view.enterListener();
+  view.toggleStates();
+}
+);
