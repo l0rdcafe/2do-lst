@@ -8,14 +8,19 @@ var dateUtils = {
   isValidDate: function (dateVal) {
     return moment(dateVal, 'DD-MM-YYYY').isValid();
   },
-  isItemActive: function (dateVal) {
-    return !this.isItemExpired(dateVal);
+  isAfterToday: function (dateVal) {
+    return !this.isBeforeToday(dateVal);
   },
-  isItemUrgent: function (dateVal) {
+  isToday: function (dateVal) {
     return moment(dateVal, 'DD-MM-YYYY').isSame(this.today(), 'day');
   },
-  isItemExpired: function (dateVal) {
+  isBeforeToday: function (dateVal) {
     return moment(dateVal, 'DD-MM-YYYY').isBefore(this.today(), 'day');
+  },
+  fmtDueDate: function (dateVal) {
+    return moment(dateVal, 'DD-MM-YYYY')
+        .startOf('day')
+        .from(this.today().startOf('day'));
   }
 };
 
@@ -27,6 +32,31 @@ model.addItem = function (text, date) {
     itemDate: date,
     completed: false
   });
+};
+
+model.isActive = function (date) {
+  return dateUtils.isAfterToday(date);
+};
+
+model.isExpired = function (date) {
+  return dateUtils.isBeforeToday(date);
+};
+
+model.isUrgent = function (date) {
+  return dateUtils.isToday(date);
+};
+
+model.count = function (itemType) {
+  var filters = {
+    expired: function (i) { return !i.completed && model.isExpired(i.itemDate); },
+    active: function (i) { return !i.completed && model.isActive(i.itemDate); },
+    urgent: function (i) { return !i.completed && model.isUrgent(i.itemDate); },
+    completed: function (i) { return i.completed; }
+  };
+
+  if (itemType in filters) {
+    return this.items.filter(filters[itemType]).length;
+  }
 };
 
 model.changeItem = function (pos, text, date) {
@@ -59,65 +89,47 @@ model.toggleAll = function () {
   }
 };
 
-view.viewState = 'All';
+view.todoScreen = 'All';
 
 view.displayItems = function () {
-  var counter = model.items
-        .filter(function (i) {
-          return !i.completed && dateUtils.isItemActive(i.itemDate);
-        }).length;
-  var counterComplete = model.items
-        .filter(function (i) {
-          return i.completed;
-        }).length;
-  var counterUrgent = model.items
-        .filter(function (i) {
-          return !i.completed && dateUtils.isItemUrgent(i.itemDate);
-        }).length;
-  var counterExpired = model.items
-        .filter(function (i) {
-          return !i.completed && dateUtils.isItemExpired(i.itemDate);
-        }).length;
+  var counter = model.count('active');
+  var counterComplete = model.count('completed');
+  var counterUrgent = model.count('urgent');
+  var counterExpired = model.count('expired');
 
-  $('#all').text(model.items.length > 0 ? model.items.length + ' All' : 'All');
-  $('#active').text(counter > 0 ? counter + ' Active' : 'Active');
-  $('#completed').text(counterComplete > 0 ? counterComplete + ' Completed' : 'Completed');
-  $('#expired').text(counterExpired > 0 ? counterExpired + ' Expired' : 'Expired');
-  $('#urgent').text(counterUrgent > 0 ? counterUrgent + ' Urgent' : 'Urgent');
+  $('#All').text(model.items.length > 0 ? model.items.length + ' All' : 'All');
+  $('#Active').text(counter > 0 ? counter + ' Active' : 'Active');
+  $('#Completed').text(counterComplete > 0 ? counterComplete + ' Completed' : 'Completed');
+  $('#Expired').text(counterExpired > 0 ? counterExpired + ' Expired' : 'Expired');
+  $('#Urgent').text(counterUrgent > 0 ? counterUrgent + ' Urgent' : 'Urgent');
 
   $('.list ul').html('');
 
   model.items.forEach(function (item, pos) {
-    var showAll = view.viewState === 'All';
-    var showActive = view.viewState === 'Active' && dateUtils.isItemActive(model.items[pos].itemDate);
-    var showCompleted = view.viewState === 'Completed' && item.completed;
-    var showUrgent = view.viewState === 'Urgent' && dateUtils.isItemUrgent(model.items[pos].itemDate);
-    var showExpired = view.viewState === 'Expired' && dateUtils.isItemExpired(model.items[pos].itemDate);
+    var showAll = view.todoScreen === 'All';
+    var showActive = view.todoScreen === 'Active' && model.isActive(item.itemDate) && !item.completed;
+    var showCompleted = view.todoScreen === 'Completed' && item.completed;
+    var showUrgent = view.todoScreen === 'Urgent' && model.isUrgent(item.itemDate) && !item.completed;
+    var showExpired = view.todoScreen === 'Expired' && model.isExpired(item.itemDate) && !item.completed;
 
     if (showAll || showActive || showCompleted || showUrgent || showExpired) {
-      view.createItem(item, pos);
+      this.createItem(item, pos);
     }
-  });
+  }, this);
 };
 
 view.createDeleteBtn = function () {
-  var deleteBtn = $('<i></i>');
-  deleteBtn.addClass('fa fa-window-close');
-  deleteBtn.attr('id', 'delete');
-  return deleteBtn;
+  return $('<i id="delete" class="fa fa-window-close"></i>');
 };
 
 view.createEditBtn = function () {
-  var $editBtn = $('<i id="edit" class="fa fa-pencil-square-o"></i>');
-  return $editBtn;
+  return $('<i id="edit" class="fa fa-pencil-square-o"></i>');
 };
 
 view.createDateTxt = function (item) {
   var $dateTxt = $('<small></small>');
-  var dueDate = moment(item.itemDate, 'DD-MM-YYYY')
-        .startOf('day')
-        .from(dateUtils.today().startOf('day'));
-  if (item.completed || this.viewState === 'Expired') {
+  var dueDate = dateUtils.fmtDueDate(item.itemDate);
+  if (item.completed || this.todoScreen === 'Expired') {
     $dateTxt.addClass('strike');
   }
   $dateTxt.text(dueDate);
@@ -128,13 +140,13 @@ view.createDateTxt = function (item) {
 };
 
 view.createItemIcon = function (item) {
-  var $itemIcon = $('<i id="false" class="fa fa-circle-o"></i>');
+  var $itemIcon = $('<i id="incomplete" class="fa fa-circle-o"></i>');
   if (item.completed) {
     $itemIcon.toggleClass('fa-circle-o fa-check-circle-o');
-    $itemIcon.attr('id', 'true');
-  } else if (view.viewState === 'Urgent') {
+    $itemIcon.attr('id', 'complete');
+  } else if (view.todoScreen === 'Urgent') {
     $itemIcon.addClass('fa-exclamation-triangle').removeClass('fa-circle-o');
-  } else if (view.viewState === 'Expired') {
+  } else if (view.todoScreen === 'Expired') {
     $itemIcon.addClass('fa-exclamation');
   }
   return $itemIcon;
@@ -142,7 +154,7 @@ view.createItemIcon = function (item) {
 
 view.createItemTxt = function (item) {
   var $itemTxt = $('<span></span>');
-  if (item.completed || view.viewState === 'Expired') {
+  if (item.completed || view.todoScreen === 'Expired') {
     $itemTxt.addClass('strike');
   }
   $itemTxt.text(item.itemText);
@@ -153,7 +165,7 @@ view.createItem = function (item, pos) {
   var $li = $('<li></li>');
   $li.attr('id', pos);
   $('.list ul').append($li);
-  $($li.first()).before(this.createItemIcon(item));
+  $li.append(this.createItemIcon(item));
   $li.append(this.createItemTxt(item));
   $li.append(this.createDateTxt(item));
   $li.append(this.createEditBtn());
@@ -161,9 +173,7 @@ view.createItem = function (item, pos) {
 };
 
 view.createInputField = function (pos) {
-  var $inputField = $('<input>');
-  $inputField.attr('type', 'text');
-  $inputField.addClass('edit-txt');
+  var $inputField = $('<input type="text" class="edit-txt">');
   if (
     model.items[pos].itemText === '' ||
     model.items[pos].itemText === undefined
@@ -176,9 +186,7 @@ view.createInputField = function (pos) {
 };
 
 view.createDateField = function (pos) {
-  var $dateField = $('<input>');
-  $dateField.attr('type', 'date');
-  $dateField.addClass('edit-date');
+  var $dateField = $('<input type="date" class="edit-date">');
   if (model.items[pos].itemDate === '') {
     $dateField.attr('placeholder', 'DD/MM/YYYY');
   } else {
@@ -188,10 +196,7 @@ view.createDateField = function (pos) {
 };
 
 view.createSaveBtn = function (pos) {
-  var $saveBtn = $('<i></i>');
-  $saveBtn.addClass('fa fa-floppy-o');
-  $saveBtn.attr('id', 'save');
-  return $saveBtn;
+  return $('<i id="save" class="fa fa-floppy-o"></i>');
 };
 
 view.enterListener = function () {
@@ -219,21 +224,11 @@ view.colorState = function () {
 view.toggleStates = function () {
   var stateToggle = function (e) {
     var elementClicked = e.target;
-    view.colorState();
-    if (elementClicked.id === 'all') {
-      view.viewState = 'All';
-    } else if (elementClicked.id === 'active') {
-      view.viewState = 'Active';
-    } else if (elementClicked.id === 'completed') {
-      view.viewState = 'Completed';
-    } else if (elementClicked.id === 'urgent') {
-      view.viewState = 'Urgent';
-    } else if (elementClicked.id === 'expired') {
-      view.viewState = 'Expired';
-    }
+    this.colorState();
+    this.todoScreen = elementClicked.id;
     elementClicked.style.backgroundColor = '#aaa3';
-    view.displayItems();
-  };
+    this.displayItems();
+  }.bind(this);
   $('#nav').on('click', stateToggle);
 };
 
@@ -242,7 +237,7 @@ view.setUpEvents = function () {
     var clickedElm = event.target;
     if (clickedElm.id === 'delete') {
       handlers.deleteItem(clickedElm.parentNode.id);
-    } else if (clickedElm.id === 'false' || clickedElm.id === 'true') {
+    } else if (clickedElm.id === 'complete' || clickedElm.id === 'incomplete') {
       handlers.toggleComplete(clickedElm.parentNode.id);
     } else if (clickedElm.id === 'edit') {
       handlers.changeItem(clickedElm.parentNode.id);
