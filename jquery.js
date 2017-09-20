@@ -144,9 +144,9 @@ view.createItemIcon = function (item) {
   if (item.completed) {
     $itemIcon.toggleClass('fa-circle-o fa-check-circle-o');
     $itemIcon.attr('id', 'complete');
-  } else if (view.todoScreen === 'Urgent') {
+  } else if (this.todoScreen === 'Urgent') {
     $itemIcon.addClass('fa-exclamation-triangle').removeClass('fa-circle-o');
-  } else if (view.todoScreen === 'Expired') {
+  } else if (this.todoScreen === 'Expired') {
     $itemIcon.addClass('fa-exclamation');
   }
   return $itemIcon;
