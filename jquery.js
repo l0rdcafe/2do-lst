@@ -19,8 +19,8 @@ var dateUtils = {
   },
   fmtDueDate: function (dateVal) {
     return moment(dateVal, 'DD-MM-YYYY')
-        .startOf('day')
-        .from(this.today().startOf('day'));
+          .startOf('day')
+          .from(this.today().startOf('day'));
   }
 };
 
@@ -49,7 +49,7 @@ model.count = function (itemType) {
   if (itemType in filters) {
     return this.items.filter(filters[itemType]).length;
   }
-  throw new Error(itemType + ' is not a correct filter');
+  throw new Error(itemType + ' is not a filter');
 };
 
 model.changeItem = function (pos, text, date) {
@@ -100,10 +100,10 @@ view.displayItems = function () {
 
   model.items.forEach(function (item, pos) {
     var showAll = this.todoScreen === 'All';
-    var showActive = this.todoScreen === 'Active' && model.isActive(item);
+    var showActive = this.todoScreen === 'Active' && item.isActive();
     var showCompleted = this.todoScreen === 'Completed' && item.completed;
-    var showUrgent = this.todoScreen === 'Urgent' && model.isUrgent(item);
-    var showExpired = this.todoScreen === 'Expired' && model.isExpired(item);
+    var showUrgent = this.todoScreen === 'Urgent' && item.isUrgent();
+    var showExpired = this.todoScreen === 'Expired' && item.isExpired();
 
     if (showAll || showActive || showCompleted || showUrgent || showExpired) {
       this.createItem(item, pos);
