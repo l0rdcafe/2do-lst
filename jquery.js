@@ -157,12 +157,12 @@ view.createItemTxt = function (item) {
 view.createItem = function (item, pos) {
   var $li = $('<li class="column columns"></li>');
   $li.attr('id', pos);
-  $('.list ul').append($li);
   $li.append(this.createItemIcon(item));
   $li.append(this.createItemTxt(item));
   $li.append(this.createDateTxt(item));
   $li.append(this.createEditBtn());
   $li.append(this.createDeleteBtn());
+  $('.list ul').append($li.hide().fadeIn(1000));
 };
 
 view.createInputField = function (pos) {
@@ -201,8 +201,8 @@ view.enterListener = function () {
         alert('Please enter a valid 2-Do');
       } else if (invalidItemDate) {
         alert('Please enter a valid date');
-      } else if ($('input').is('.edit-txt') || $('input').is('.edit-date')) {
-        handlers.saveItem($('input').parent().attr('id'));
+      } else if ($('input').hasClass('edit-txt')) {
+        handlers.saveItem($('.edit-txt').parent().attr('id'));
       } else {
         handlers.addItem();
       }
