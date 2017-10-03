@@ -192,21 +192,42 @@ view.createSaveBtn = function (pos) {
   return $('<i id="save" class="fa fa-floppy-o"></i>');
 };
 
+view.createNotification = function (type) {
+  var $notif = $('<div class="notification xcentered column is-3"></div>');
+  if (type === 'text') {
+    $notif.addClass('is-danger');
+    $notif.html('Please enter a <strong>valid</strong> 2-Do');
+  } else if (type === 'date') {
+    $notif.addClass('is-warning');
+    $notif.html('Please enter a <strong>valid</strong> date');
+  }
+  $('.main').after($notif.hide().fadeIn(250));
+  setTimeout(function () {
+    $notif.fadeOut();
+  }, 2500);
+};
+
 view.enterListener = function () {
   var enterPress = function (e) {
     var itemTxt = $('#item-txt').val();
     var invalidItemDate = !dateUtils.isValidDate($('#date-txt').val());
     if (e.which === 13 || e.keyCode === 13) {
       if (itemTxt === '') {
-        alert('Please enter a valid 2-Do');
+        $('#item-txt').addClass('is-danger');
+        view.createNotification('text');
       } else if (invalidItemDate) {
-        alert('Please enter a valid date');
+        $('#date-txt').addClass('is-warning');
+        view.createNotification('date');
       } else if ($('input').hasClass('edit-txt')) {
         handlers.saveItem($('.edit-txt').parent().attr('id'));
       } else {
         handlers.addItem();
       }
     }
+    setTimeout(function () {
+      $('#item-txt').removeClass('is-danger');
+      $('#date-txt').removeClass('is-warning');
+    }, 2500);
   };
   $('input').on('keypress', enterPress);
 };
