@@ -155,7 +155,7 @@ view.createItemTxt = function (item) {
 };
 
 view.createItem = function (item, pos) {
-  var $li = $('<li></li>');
+  var $li = $('<li class="column columns"></li>');
   $li.attr('id', pos);
   $('.list ul').append($li);
   $li.append(this.createItemIcon(item));
@@ -166,7 +166,7 @@ view.createItem = function (item, pos) {
 };
 
 view.createInputField = function (pos) {
-  var $inputField = $('<input type="text" class="edit-txt">');
+  var $inputField = $('<input type="text" class="edit-txt input column is-4">');
   if (
     model.items[pos].itemText === '' ||
     model.items[pos].itemText === undefined
@@ -179,7 +179,7 @@ view.createInputField = function (pos) {
 };
 
 view.createDateField = function (pos) {
-  var $dateField = $('<input type="date" class="edit-date">');
+  var $dateField = $('<input type="date" class="edit-date input column is-3">');
   if (model.items[pos].itemDate === '') {
     $dateField.attr('placeholder', 'DD/MM/YYYY');
   } else {
@@ -194,18 +194,21 @@ view.createSaveBtn = function (pos) {
 
 view.enterListener = function () {
   var enterPress = function (e) {
+    var itemTxt = $('#item-txt').val();
+    var invalidItemDate = !dateUtils.isValidDate($('#date-txt').val());
     if (e.which === 13 || e.keyCode === 13) {
-      if ($('#item-txt').val() === '') {
+      if (itemTxt === '') {
         alert('Please enter a valid 2-Do');
-      } else if (!dateUtils.isValidDate($('#date-txt').val())) {
+      } else if (invalidItemDate) {
         alert('Please enter a valid date');
+      } else if ($('input').is('.edit-txt') || $('input').is('.edit-date')) {
+        handlers.saveItem($('input').parent().attr('id'));
       } else {
         handlers.addItem();
       }
     }
   };
-  $('#item-txt').on('keypress', enterPress);
-  $('#date-txt').on('keypress', enterPress);
+  $('input').on('keypress', enterPress);
 };
 
 view.colorState = function () {
