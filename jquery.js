@@ -112,15 +112,15 @@ view.displayItems = function () {
 };
 
 view.createDeleteBtn = function () {
-  return $('<i id="delete" class="fa fa-window-close"></i>');
+  return $('<i id="delete" class="fa fa-window-close column is-1"></i>');
 };
 
 view.createEditBtn = function () {
-  return $('<i id="edit" class="fa fa-pencil-square-o"></i>');
+  return $('<i id="edit" class="fa fa-pencil-square-o column is-1"></i>');
 };
 
 view.createDateTxt = function (item) {
-  var $dateTxt = $('<small></small>');
+  var $dateTxt = $('<small class="column is-2"></small>');
   var dueDate = dateUtils.fmtDueDate(item.itemDate);
   if (item.completed || this.todoScreen === 'Expired') {
     $dateTxt.addClass('strike');
@@ -133,7 +133,7 @@ view.createDateTxt = function (item) {
 };
 
 view.createItemIcon = function (item) {
-  var $itemIcon = $('<i id="incomplete" class="fa fa-circle-o"></i>');
+  var $itemIcon = $('<i id="incomplete" class="fa fa-circle-o column is-1"></i>');
   if (item.completed) {
     $itemIcon.toggleClass('fa-circle-o fa-check-circle-o');
     $itemIcon.attr('id', 'complete');
@@ -146,7 +146,7 @@ view.createItemIcon = function (item) {
 };
 
 view.createItemTxt = function (item) {
-  var $itemTxt = $('<span></span>');
+  var $itemTxt = $('<span class="column is-7"></span>');
   if (item.completed || view.todoScreen === 'Expired') {
     $itemTxt.addClass('strike');
   }
@@ -189,7 +189,7 @@ view.createDateField = function (pos) {
 };
 
 view.createSaveBtn = function (pos) {
-  return $('<i id="save" class="fa fa-floppy-o"></i>');
+  return $('<i id="save" class="fa fa-floppy-o column is-1"></i>');
 };
 
 view.createNotification = function (type) {
