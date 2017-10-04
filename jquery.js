@@ -107,7 +107,6 @@ view.displayItems = function () {
 
     if (showAll || showActive || showCompleted || showUrgent || showExpired) {
       this.createItem(item, pos);
-      $('#' + pos).hide().fadeIn(500);
     }
   }, this);
 };
@@ -202,7 +201,7 @@ view.createNotification = function (type) {
     $notif.addClass('is-warning');
     $notif.html('Please enter a <strong>valid</strong> date');
   }
-  $('#nav').after($notif.hide().fadeIn(250));
+  $('h1').after($notif.hide().fadeIn(250));
   setTimeout(function () {
     $notif.fadeOut();
   }, 2500);
