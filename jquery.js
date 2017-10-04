@@ -107,6 +107,7 @@ view.displayItems = function () {
 
     if (showAll || showActive || showCompleted || showUrgent || showExpired) {
       this.createItem(item, pos);
+      $('#' + pos).hide().fadeIn(500);
     }
   }, this);
 };
@@ -155,14 +156,14 @@ view.createItemTxt = function (item) {
 };
 
 view.createItem = function (item, pos) {
-  var $li = $('<li class="column columns"></li>');
+  var $li = $('<li class="column columns is-12"></li>');
   $li.attr('id', pos);
   $li.append(this.createItemIcon(item));
   $li.append(this.createItemTxt(item));
   $li.append(this.createDateTxt(item));
   $li.append(this.createEditBtn());
   $li.append(this.createDeleteBtn());
-  $('.list ul').append($li.hide().fadeIn(1000));
+  $('.list ul').append($li);
 };
 
 view.createInputField = function (pos) {
@@ -201,7 +202,7 @@ view.createNotification = function (type) {
     $notif.addClass('is-warning');
     $notif.html('Please enter a <strong>valid</strong> date');
   }
-  $('.main').after($notif.hide().fadeIn(250));
+  $('#nav').after($notif.hide().fadeIn(250));
   setTimeout(function () {
     $notif.fadeOut();
   }, 2500);
@@ -218,8 +219,6 @@ view.enterListener = function () {
       } else if (invalidItemDate) {
         $('#date-txt').addClass('is-warning');
         view.createNotification('date');
-      } else if ($('input').hasClass('edit-txt')) {
-        handlers.saveItem($('.edit-txt').parent().attr('id'));
       } else {
         handlers.addItem();
       }
@@ -290,9 +289,9 @@ handlers.saveItem = function (pos) {
   var editInputDate = $('#' + pos).find('.edit-date').val();
 
   if (editInputTxt === '') {
-    alert('Please enter a valid 2-do item');
+    view.createNotification('text');
   } else if (!dateUtils.isValidDate(editInputDate)) {
-    alert('Please enter a valid date');
+    view.createNotification('date');
   } else {
     model.changeItem(pos, editInputTxt, editInputDate);
     view.displayItems();
@@ -301,6 +300,7 @@ handlers.saveItem = function (pos) {
 
 handlers.deleteItem = function (pos) {
   model.deleteItem(pos);
+  $('#' + pos).fadeOut(1000);
   view.displayItems();
 };
 
