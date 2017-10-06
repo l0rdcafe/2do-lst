@@ -112,7 +112,7 @@ view.displayItems = function () {
 };
 
 view.createDeleteBtn = function () {
-  return $('<i id="delete" class="fa fa-window-close column is-1"></i>');
+  return $('<i id="delete" class="fa fa-window-close column"></i>');
 };
 
 view.createEditBtn = function () {
@@ -120,7 +120,7 @@ view.createEditBtn = function () {
 };
 
 view.createDateTxt = function (item) {
-  var $dateTxt = $('<small class="column is-2"></small>');
+  var $dateTxt = $('<small class="column is-3"></small>');
   var dueDate = dateUtils.fmtDueDate(item.itemDate);
   if (item.completed || this.todoScreen === 'Expired') {
     $dateTxt.addClass('strike');
@@ -166,7 +166,7 @@ view.createItem = function (item, pos) {
 };
 
 view.createInputField = function (pos) {
-  var $inputField = $('<input type="text" class="edit-txt input column is-4">');
+  var $inputField = $('<input type="text" class="edit-txt input column is-6 is-offset-1">');
   if (
     model.items[pos].itemText === '' ||
     model.items[pos].itemText === undefined
@@ -179,7 +179,7 @@ view.createInputField = function (pos) {
 };
 
 view.createDateField = function (pos) {
-  var $dateField = $('<input type="date" class="edit-date input column is-3">');
+  var $dateField = $('<input type="date" class="edit-date input column is-3 is-offset-1">');
   if (model.items[pos].itemDate === '') {
     $dateField.attr('placeholder', 'DD/MM/YYYY');
   } else {
@@ -189,7 +189,7 @@ view.createDateField = function (pos) {
 };
 
 view.createSaveBtn = function (pos) {
-  return $('<i id="save" class="fa fa-floppy-o column is-1"></i>');
+  return $('<i id="save" class="fa fa-floppy-o column"></i>');
 };
 
 view.createNotification = function (type) {
