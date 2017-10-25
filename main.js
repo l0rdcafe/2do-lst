@@ -314,9 +314,15 @@ handlers.toggleAll = function () {
   view.displayItems();
 };
 
+handlers.sortItems = function () {
+  $('#list').sortable();
+  $('#list').disableSelection();
+};
+
 $(document).ready(function () {
   view.setUpEvents();
   view.enterListener();
   view.toggleStates();
+  handlers.sortItems();
 }
 );
