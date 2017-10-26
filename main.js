@@ -325,10 +325,15 @@ handlers.sortItems = function () {
     });
 };
 
+handlers.datePicker = function () {
+  $('#date-txt').pickadate();
+};
+
 $(document).ready(function () {
   view.setUpEvents();
   view.enterListener();
   view.toggleStates();
+  handlers.datePicker();
   handlers.sortItems();
 }
 );
