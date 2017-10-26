@@ -315,8 +315,14 @@ handlers.toggleAll = function () {
 };
 
 handlers.sortItems = function () {
-  $('#list').sortable();
-  $('#list').disableSelection();
+  $('#list').sortable()
+    .disableSelection()
+    .on('sortupdate', function () {
+      model.items = $.makeArray($('#list li'))
+        .map(function (li) {
+          return model.items[li.id];
+        });
+    });
 };
 
 $(document).ready(function () {
