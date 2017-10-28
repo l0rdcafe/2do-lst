@@ -210,7 +210,7 @@ view.createNotification = function (type) {
 view.enterListener = function () {
   var enterPress = function (e) {
     var itemTxt = $('#item-txt').val();
-    var invalidItemDate = !dateUtils.isValidDate($('#date-txt').val());
+    var invalidItemDate = !dateUtils.isValidDate($('#date-txt').pickadate().get('select', 'dd-mm-yyyy'));
     if (e.which === 13 || e.keyCode === 13) {
       if (itemTxt === '') {
         $('#item-txt').addClass('is-danger');
@@ -268,7 +268,7 @@ view.setUpEvents = function () {
 handlers.addItem = function () {
   var $inputText = $('#item-txt');
   var $inputDate = $('#date-txt');
-  model.addItem($inputText.val(), $inputDate.val());
+  model.addItem($inputText.val(), $inputDate.pickadate().get('select', 'dd-mm-yyyy'));
   $inputText.val('');
   $inputDate.val('');
   view.displayItems();
@@ -326,7 +326,10 @@ handlers.sortItems = function () {
 };
 
 handlers.datePicker = function () {
-  $('#date-txt').pickadate();
+  $('#date-txt').pickadate()
+    .on('onselect', function () {
+      console.log($(this));
+    });
 };
 
 $(document).ready(function () {

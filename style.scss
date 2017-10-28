@@ -8,9 +8,15 @@
 }
 
 input.column {
-  padding-bottom: 0.666666667rem;
+  padding: 0;
+  padding-left: 0.5rem;
 }
 
 #nav {
   width: 54%;
+}
+
+.picker__table td,
+.picker__weekday {
+  text-align: center;
 }
