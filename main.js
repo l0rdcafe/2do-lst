@@ -18,9 +18,7 @@ var dateUtils = {
     return moment(dateVal, 'DD-MM-YYYY').isBefore(this.today(), 'day');
   },
   fmtDueDate: function (dateVal) {
-    return moment(dateVal, 'DD-MM-YYYY')
-          .startOf('day')
-          .from(this.today().startOf('day'));
+    return moment(dateVal, 'DD-MM-YYYY HH:MM A');
   }
 };
 
@@ -188,6 +186,16 @@ view.createDateField = function (pos) {
   return $dateField;
 };
 
+view.createTimeField = function (pos) {
+  var $timeField = $('<input type="text" class="edit-time input column is-1">');
+  if (model.items[pos].itemDate === '') {
+    $timeField.attr('placeholder', 'Time');
+  } else {
+    $timeField.val(model.items[pos].itemDate);
+  }
+  return $timeField;
+};
+
 view.createSaveBtn = function (pos) {
   return $('<i id="save" class="fa fa-floppy-o column"></i>');
 };
@@ -200,6 +208,9 @@ view.createNotification = function (type) {
   } else if (type === 'date') {
     $notif.addClass('is-warning');
     $notif.html('Please enter a <strong>valid</strong> date');
+  } else if (type === 'time') {
+    $notif.addClass('is-warning');
+    $notif.html('Please enter a <strong>valid</strong> time');
   }
   $('h1').after($notif.hide().fadeIn(250));
   setTimeout(function () {
@@ -208,9 +219,11 @@ view.createNotification = function (type) {
 };
 
 view.enterListener = function () {
+  var $dateInput = $('#date-txt').pickadate();
   var enterPress = function (e) {
     var itemTxt = $('#item-txt').val();
-    var invalidItemDate = !dateUtils.isValidDate($('#date-txt').pickadate().get('select', 'dd-mm-yyyy'));
+    var datePicker = $dateInput.pickadate('picker');
+    var invalidItemDate = !dateUtils.isValidDate(datePicker.get('select', 'dd-mm-yyyy'));
     if (e.which === 13 || e.keyCode === 13) {
       if (itemTxt === '') {
         $('#item-txt').addClass('is-danger');
@@ -218,6 +231,9 @@ view.enterListener = function () {
       } else if (invalidItemDate) {
         $('#date-txt').addClass('is-warning');
         view.createNotification('date');
+      } else if ($('#time-txt').val() === '') {
+        $('#time-txt').addClass('is-warning');
+        view.createNotification('time');
       } else {
         handlers.addItem();
       }
@@ -225,8 +241,10 @@ view.enterListener = function () {
     setTimeout(function () {
       $('#item-txt').removeClass('is-danger');
       $('#date-txt').removeClass('is-warning');
+      $('#time-txt').removeClass('is-warning');
     }, 2500);
   };
+  $('#time-txt').pickatime();
   $('input').on('keypress', enterPress);
 };
 
@@ -267,10 +285,15 @@ view.setUpEvents = function () {
 
 handlers.addItem = function () {
   var $inputText = $('#item-txt');
-  var $inputDate = $('#date-txt');
-  model.addItem($inputText.val(), $inputDate.pickadate().get('select', 'dd-mm-yyyy'));
+  var $inputField = $('#date-txt');
+  var $timeField = $('#time-txt');
+  var $inputDate = $inputField.pickadate('picker');
+  var itemDate = $inputDate.get('select', 'dd-mm-yyyy');
+  var itemTime = $timeField.val();
+  model.addItem($inputText.val(), itemDate + ' ' + itemTime);
   $inputText.val('');
-  $inputDate.val('');
+  $inputField.val('');
+  $timeField.val('');
   view.displayItems();
 };
 
@@ -279,27 +302,34 @@ handlers.changeItem = function (pos) {
   $itemID.html('');
   $itemID.append(view.createInputField(pos));
   $itemID.append(view.createDateField(pos));
+  $itemID.append(view.createTimeField(pos));
   $itemID.append(view.createSaveBtn(pos));
   $itemID.append(view.createDeleteBtn());
+  $('.edit-date').pickadate();
+  $('.edit-time').pickatime();
 };
 
 handlers.saveItem = function (pos) {
   var editInputTxt = $('#' + pos).find('.edit-txt').val();
-  var editInputDate = $('#' + pos).find('.edit-date').val();
+  var editInputField = $('#' + pos).find('.edit-date');
+  var editInputTime = $('#' + pos).find('.edit-time').val();
+  var picker = $(editInputField).pickadate('picker');
+  var editInputDate = picker.get('select', 'dd-mm-yyyy');
 
   if (editInputTxt === '') {
     view.createNotification('text');
   } else if (!dateUtils.isValidDate(editInputDate)) {
     view.createNotification('date');
+  } else if (editInputTime === '') {
+    view.createNotification('time');
   } else {
-    model.changeItem(pos, editInputTxt, editInputDate);
+    model.changeItem(pos, editInputTxt, editInputDate + ' ' + editInputTime);
     view.displayItems();
   }
 };
 
 handlers.deleteItem = function (pos) {
   model.deleteItem(pos);
-  $('#' + pos).fadeOut(1000);
   view.displayItems();
 };
 
@@ -325,18 +355,10 @@ handlers.sortItems = function () {
     });
 };
 
-handlers.datePicker = function () {
-  $('#date-txt').pickadate()
-    .on('onselect', function () {
-      console.log($(this));
-    });
-};
-
 $(document).ready(function () {
   view.setUpEvents();
   view.enterListener();
   view.toggleStates();
-  handlers.datePicker();
   handlers.sortItems();
 }
 );
