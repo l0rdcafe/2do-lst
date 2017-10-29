@@ -18,7 +18,10 @@ var dateUtils = {
     return moment(dateVal, 'DD-MM-YYYY').isBefore(this.today(), 'day');
   },
   fmtDueDate: function (dateVal) {
-    return moment(dateVal, 'DD-MM-YYYY HH:MM A');
+    return moment(dateVal, 'DD-MM-YYYY HH:mm');
+  },
+  fixPM_AM: function (timeVal) {
+    return parseInt(timeVal.substring(0, 2), 10) + 12;
   }
 };
 
@@ -119,7 +122,7 @@ view.createEditBtn = function () {
 
 view.createDateTxt = function (item) {
   var $dateTxt = $('<small class="column is-3"></small>');
-  var dueDate = dateUtils.fmtDueDate(item.itemDate);
+  var dueDate = item.itemDate.format('DD-MM-YYYY HH:mm a');
   if (item.completed || this.todoScreen === 'Expired') {
     $dateTxt.addClass('strike');
   }
@@ -289,8 +292,16 @@ handlers.addItem = function () {
   var $timeField = $('#time-txt');
   var $inputDate = $inputField.pickadate('picker');
   var itemDate = $inputDate.get('select', 'dd-mm-yyyy');
-  var itemTime = $timeField.val();
-  model.addItem($inputText.val(), itemDate + ' ' + itemTime);
+  var timeInput = $timeField.val();
+  var itemTime;
+
+  if (timeInput.indexOf('PM') !== -1) {
+    dateUtils.fixPM_AM(timeInput);
+    itemTime = timeInput;
+  } else {
+    itemTime = $timeField.val();
+  }
+  model.addItem($inputText.val(), dateUtils.fmtDueDate(itemDate + ' ' + itemTime, 'DD-MM-YYYY HH:mm a'));
   $inputText.val('');
   $inputField.val('');
   $timeField.val('');
