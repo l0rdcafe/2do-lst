@@ -19,9 +19,6 @@ var dateUtils = {
   },
   fmtDueDate: function (dateVal) {
     return moment(dateVal, 'DD-MM-YYYY HH:mm');
-  },
-  fixPM_AM: function (timeVal) {
-    return parseInt(timeVal.substring(0, 2), 10) + 12;
   }
 };
 
@@ -34,8 +31,19 @@ model.addItem = function (text, date) {
     completed: false,
     isActive: function () { return dateUtils.isAfterToday(this.itemDate) && !this.completed; },
     isUrgent: function () { return dateUtils.isToday(this.itemDate) && !this.completed; },
-    isExpired: function () { return dateUtils.isBeforeToday(this.itemDate) && !this.completed; }
+    isExpired: function () { return dateUtils.isBeforeToday(this.itemDate) && !this.completed; },
+    hasExpired: function () {
+      var itemTimeInMillis = this.itemDate.valueOf();
+      var dueDateinMillis = dateUtils.today().valueOf();
+
+      setTimeout(function () {
+        if (this.isExpired()) {
+          view.displayItems();
+        }
+      }, dueDateinMillis - itemTimeInMillis);
+    }
   };
+  item.hasExpired();
   this.items.push(item);
 };
 
@@ -122,14 +130,11 @@ view.createEditBtn = function () {
 
 view.createDateTxt = function (item) {
   var $dateTxt = $('<small class="column is-3"></small>');
-  var dueDate = item.itemDate.format('DD-MM-YYYY HH:mm a');
+  var dueDate = item.itemDate.from(dateUtils.today());
   if (item.completed || this.todoScreen === 'Expired') {
     $dateTxt.addClass('strike');
   }
   $dateTxt.text(dueDate);
-  if ($dateTxt.text() === 'a few seconds ago') {
-    $dateTxt.text('Today');
-  }
   return $dateTxt;
 };
 
@@ -287,22 +292,16 @@ view.setUpEvents = function () {
 };
 
 handlers.addItem = function () {
-  var $inputText = $('#item-txt');
+  var $textField = $('#item-txt');
   var $inputField = $('#date-txt');
   var $timeField = $('#time-txt');
   var $inputDate = $inputField.pickadate('picker');
+  var $inputTime = $timeField.pickatime('picker');
   var itemDate = $inputDate.get('select', 'dd-mm-yyyy');
-  var timeInput = $timeField.val();
-  var itemTime;
-
-  if (timeInput.indexOf('PM') !== -1) {
-    dateUtils.fixPM_AM(timeInput);
-    itemTime = timeInput;
-  } else {
-    itemTime = $timeField.val();
-  }
-  model.addItem($inputText.val(), dateUtils.fmtDueDate(itemDate + ' ' + itemTime, 'DD-MM-YYYY HH:mm a'));
-  $inputText.val('');
+  var timeInput = $inputTime.get('select', 'HH:i A');
+  var itemTime = dateUtils.fmtDueDate(itemDate + ' ' + timeInput, 'DD-MM-YYYY HH:mm a');
+  model.addItem($textField.val(), itemTime);
+  $textField.val('');
   $inputField.val('');
   $timeField.val('');
   view.displayItems();
@@ -323,9 +322,12 @@ handlers.changeItem = function (pos) {
 handlers.saveItem = function (pos) {
   var editInputTxt = $('#' + pos).find('.edit-txt').val();
   var editInputField = $('#' + pos).find('.edit-date');
-  var editInputTime = $('#' + pos).find('.edit-time').val();
+  var editTimeField = $('#' + pos).find('.edit-time');
+  var timePicker = $(editTimeField).pickatime('picker');
   var picker = $(editInputField).pickadate('picker');
   var editInputDate = picker.get('select', 'dd-mm-yyyy');
+  var editInputTime = timePicker.get('select', 'HH:i A');
+  var editedTime = dateUtils.fmtDueDate(editInputDate + ' ' + editInputTime);
 
   if (editInputTxt === '') {
     view.createNotification('text');
@@ -334,7 +336,7 @@ handlers.saveItem = function (pos) {
   } else if (editInputTime === '') {
     view.createNotification('time');
   } else {
-    model.changeItem(pos, editInputTxt, editInputDate + ' ' + editInputTime);
+    model.changeItem(pos, editInputTxt, editedTime);
     view.displayItems();
   }
 };
