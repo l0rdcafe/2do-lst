@@ -2,8 +2,8 @@ var model = {};
 var view = {};
 var handlers = {};
 var dateUtils = {
-  today: function () {
-    return moment();
+  todayInMS: function () {
+    return moment().valueOf();
   },
   isValidDate: function (dateVal) {
     return moment(dateVal, 'DD-MM-YYYY').isValid();
@@ -12,13 +12,16 @@ var dateUtils = {
     return !this.isBeforeToday(dateVal);
   },
   isToday: function (dateVal) {
-    return moment(dateVal, 'DD-MM-YYYY').isSame(this.today(), 'day');
+    return dateVal.valueOf() - this.todayInMS() > 0;
   },
   isBeforeToday: function (dateVal) {
-    return moment(dateVal, 'DD-MM-YYYY').isBefore(this.today(), 'day');
+    return dateVal.valueOf() - this.todayInMS() <= 0;
   },
   fmtDueDate: function (dateVal) {
     return moment(dateVal, 'DD-MM-YYYY HH:mm');
+  },
+  itemTimeInMS: function (timeVal) {
+    return timeVal.valueOf();
   }
 };
 
@@ -31,19 +34,8 @@ model.addItem = function (text, date) {
     completed: false,
     isActive: function () { return dateUtils.isAfterToday(this.itemDate) && !this.completed; },
     isUrgent: function () { return dateUtils.isToday(this.itemDate) && !this.completed; },
-    isExpired: function () { return dateUtils.isBeforeToday(this.itemDate) && !this.completed; },
-    hasExpired: function () {
-      var itemTimeInMillis = this.itemDate.valueOf();
-      var dueDateinMillis = dateUtils.today().valueOf();
-
-      setTimeout(function () {
-        if (this.isExpired()) {
-          view.displayItems();
-        }
-      }, dueDateinMillis - itemTimeInMillis);
-    }
+    isExpired: function () { return dateUtils.isBeforeToday(this.itemDate) && !this.completed; }
   };
-  item.hasExpired();
   this.items.push(item);
 };
 
@@ -117,7 +109,19 @@ view.displayItems = function () {
     if (showAll || showActive || showCompleted || showUrgent || showExpired) {
       this.createItem(item, pos);
     }
+    view.hasExpired(item);
   }, this);
+};
+
+view.hasExpired = function (item) {
+  var itemTimeInMillis = dateUtils.itemTimeInMS(item.itemDate);
+  var dueDateinMillis = dateUtils.todayInMS();
+
+  setTimeout(function () {
+    if (item.isExpired()) {
+      view.displayItems();
+    }
+  }, dueDateinMillis - itemTimeInMillis);
 };
 
 view.createDeleteBtn = function () {
@@ -130,7 +134,7 @@ view.createEditBtn = function () {
 
 view.createDateTxt = function (item) {
   var $dateTxt = $('<small class="column is-3"></small>');
-  var dueDate = item.itemDate.from(dateUtils.today());
+  var dueDate = item.itemDate.from(dateUtils.todayInMS());
   if (item.completed || this.todoScreen === 'Expired') {
     $dateTxt.addClass('strike');
   }
