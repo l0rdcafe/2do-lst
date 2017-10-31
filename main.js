@@ -1,18 +1,25 @@
 var model = {};
 var view = {};
 var handlers = {};
+var nextID = 1;
 var dateUtils = {
+  today: function () {
+    return moment();
+  },
   todayInMS: function () {
     return moment().valueOf();
+  },
+  dayInMS: function () {
+    return moment.duration(1, 'days').asMilliseconds();
   },
   isValidDate: function (dateVal) {
     return moment(dateVal, 'DD-MM-YYYY').isValid();
   },
   isAfterToday: function (dateVal) {
-    return !this.isBeforeToday(dateVal);
+    return dateVal.valueOf() - this.todayInMS() > this.dayInMS();
   },
   isToday: function (dateVal) {
-    return dateVal.valueOf() - this.todayInMS() > 0;
+    return dateVal.valueOf() - this.todayInMS() < this.dayInMS() && dateVal.valueOf() - this.todayInMS() > 0;
   },
   isBeforeToday: function (dateVal) {
     return dateVal.valueOf() - this.todayInMS() <= 0;
@@ -26,17 +33,20 @@ var dateUtils = {
 };
 
 model.items = [];
+model.timers = {};
 
 model.addItem = function (text, date) {
   var item = {
     itemText: text,
     itemDate: date,
     completed: false,
+    itemID: nextID,
     isActive: function () { return dateUtils.isAfterToday(this.itemDate) && !this.completed; },
     isUrgent: function () { return dateUtils.isToday(this.itemDate) && !this.completed; },
     isExpired: function () { return dateUtils.isBeforeToday(this.itemDate) && !this.completed; }
   };
   this.items.push(item);
+  nextID += 1;
 };
 
 model.count = function (itemType) {
@@ -109,19 +119,7 @@ view.displayItems = function () {
     if (showAll || showActive || showCompleted || showUrgent || showExpired) {
       this.createItem(item, pos);
     }
-    view.hasExpired(item);
   }, this);
-};
-
-view.hasExpired = function (item) {
-  var itemTimeInMillis = dateUtils.itemTimeInMS(item.itemDate);
-  var dueDateinMillis = dateUtils.todayInMS();
-
-  setTimeout(function () {
-    if (item.isExpired()) {
-      view.displayItems();
-    }
-  }, dueDateinMillis - itemTimeInMillis);
 };
 
 view.createDeleteBtn = function () {
@@ -223,6 +221,9 @@ view.createNotification = function (type) {
   } else if (type === 'time') {
     $notif.addClass('is-warning');
     $notif.html('Please enter a <strong>valid</strong> time');
+  } else if (type === 'expired') {
+    $notif.addClass('is-warning');
+    $notif.html('An item has expired');
   }
   $('h1').after($notif.hide().fadeIn(250));
   setTimeout(function () {
@@ -304,15 +305,27 @@ handlers.addItem = function () {
   var itemDate = $inputDate.get('select', 'dd-mm-yyyy');
   var timeInput = $inputTime.get('select', 'HH:i A');
   var itemTime = dateUtils.fmtDueDate(itemDate + ' ' + timeInput, 'DD-MM-YYYY HH:mm a');
+  var expiryTime = itemTime.valueOf() - dateUtils.todayInMS();
+
   model.addItem($textField.val(), itemTime);
   $textField.val('');
   $inputField.val('');
   $timeField.val('');
+
+  if (!dateUtils.isBeforeToday(itemTime)) {
+    model.timers[nextID] = setTimeout(function () {
+      view.createNotification('expired');
+      view.displayItems();
+    }, expiryTime);
+  }
+
   view.displayItems();
 };
 
 handlers.changeItem = function (pos) {
   var $itemID = $('#' + pos);
+  var item = model.items[pos];
+  var timers = model.timers;
   $itemID.html('');
   $itemID.append(view.createInputField(pos));
   $itemID.append(view.createDateField(pos));
@@ -321,6 +334,10 @@ handlers.changeItem = function (pos) {
   $itemID.append(view.createDeleteBtn());
   $('.edit-date').pickadate();
   $('.edit-time').pickatime();
+
+  if (item.itemID in timers) {
+    clearInterval(timers[item.itemID]);
+  }
 };
 
 handlers.saveItem = function (pos) {
@@ -332,6 +349,9 @@ handlers.saveItem = function (pos) {
   var editInputDate = picker.get('select', 'dd-mm-yyyy');
   var editInputTime = timePicker.get('select', 'HH:i A');
   var editedTime = dateUtils.fmtDueDate(editInputDate + ' ' + editInputTime);
+  var item = model.items[pos];
+  var timers = model.timers;
+  var expiryTime = editedTime - dateUtils.todayInMS();
 
   if (editInputTxt === '') {
     view.createNotification('text');
@@ -341,12 +361,27 @@ handlers.saveItem = function (pos) {
     view.createNotification('time');
   } else {
     model.changeItem(pos, editInputTxt, editedTime);
+
+    if (!dateUtils.isBeforeToday(editedTime)) {
+      timers[item.itemID] = setTimeout(function () {
+        view.createNotification('expired');
+        view.displayItems();
+      }, expiryTime);
+    }
     view.displayItems();
   }
 };
 
 handlers.deleteItem = function (pos) {
+  var item = model.items[pos];
+  var timers = model.timers;
+
   model.deleteItem(pos);
+
+  if (item.itemID in timers) {
+    clearInterval(timers[item.itemID]);
+  }
+
   view.displayItems();
 };
 
