@@ -46,7 +46,6 @@ model.addItem = function (text, date) {
     isExpired: function () { return dateUtils.isBeforeToday(this.itemDate) && !this.completed; }
   };
   this.items.push(item);
-  nextID += 1;
 };
 
 model.count = function (itemType) {
@@ -317,6 +316,7 @@ handlers.addItem = function () {
       view.createNotification('expired');
       view.displayItems();
     }, expiryTime);
+    nextID += 1;
   }
 
   view.displayItems();
@@ -336,7 +336,7 @@ handlers.changeItem = function (pos) {
   $('.edit-time').pickatime();
 
   if (item.itemID in timers) {
-    clearInterval(timers[item.itemID]);
+    clearTimeout(timers[item.itemID]);
   }
 };
 
@@ -379,7 +379,7 @@ handlers.deleteItem = function (pos) {
   model.deleteItem(pos);
 
   if (item.itemID in timers) {
-    clearInterval(timers[item.itemID]);
+    clearTimeout(timers[item.itemID]);
   }
 
   view.displayItems();
