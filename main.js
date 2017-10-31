@@ -15,13 +15,13 @@ var dateUtils = {
   isValidDate: function (dateVal) {
     return moment(dateVal, 'DD-MM-YYYY').isValid();
   },
-  isAfterToday: function (dateVal) {
+  isAfterNow: function (dateVal) {
     return dateVal.valueOf() - this.todayInMS() > this.dayInMS();
   },
-  isToday: function (dateVal) {
+  isNow: function (dateVal) {
     return dateVal.valueOf() - this.todayInMS() < this.dayInMS() && dateVal.valueOf() - this.todayInMS() > 0;
   },
-  isBeforeToday: function (dateVal) {
+  isBeforeNow: function (dateVal) {
     return dateVal.valueOf() - this.todayInMS() <= 0;
   },
   fmtDueDate: function (dateVal) {
@@ -33,26 +33,26 @@ var dateUtils = {
 };
 
 model.items = [];
-model.timers = {};
+handlers.timers = {};
 
 model.addItem = function (text, date) {
   var item = {
     itemText: text,
-    itemDate: date,
+    DateTime: date,
     completed: false,
     itemID: nextID,
-    isActive: function () { return dateUtils.isAfterToday(this.itemDate) && !this.completed; },
-    isUrgent: function () { return dateUtils.isToday(this.itemDate) && !this.completed; },
-    isExpired: function () { return dateUtils.isBeforeToday(this.itemDate) && !this.completed; }
+    isActive: function () { return dateUtils.isAfterNow(this.DateTime) && !this.completed; },
+    isUrgent: function () { return dateUtils.isNow(this.DateTime) && !this.completed; },
+    isExpired: function () { return dateUtils.isBeforeNow(this.DateTime) && !this.completed; }
   };
   this.items.push(item);
 };
 
 model.count = function (itemType) {
   var filters = {
-    expired: function (i) { return !i.completed && i.isExpired(); },
-    active: function (i) { return !i.completed && i.isActive(); },
-    urgent: function (i) { return !i.completed && i.isUrgent(); },
+    expired: function (i) { return i.isExpired(); },
+    active: function (i) { return i.isActive(); },
+    urgent: function (i) { return i.isUrgent(); },
     completed: function (i) { return i.completed; }
   };
 
@@ -64,7 +64,7 @@ model.count = function (itemType) {
 
 model.changeItem = function (pos, text, date) {
   this.items[pos].itemText = text;
-  this.items[pos].itemDate = date;
+  this.items[pos].DateTime = date;
 };
 
 model.deleteItem = function (pos) {
@@ -131,7 +131,7 @@ view.createEditBtn = function () {
 
 view.createDateTxt = function (item) {
   var $dateTxt = $('<small class="column is-3"></small>');
-  var dueDate = item.itemDate.from(dateUtils.todayInMS());
+  var dueDate = item.DateTime.from(dateUtils.todayInMS());
   if (item.completed || this.todoScreen === 'Expired') {
     $dateTxt.addClass('strike');
   }
@@ -187,20 +187,20 @@ view.createInputField = function (pos) {
 
 view.createDateField = function (pos) {
   var $dateField = $('<input type="date" class="edit-date input column is-3 is-offset-1">');
-  if (model.items[pos].itemDate === '') {
+  if (model.items[pos].DateTime === '') {
     $dateField.attr('placeholder', 'DD/MM/YYYY');
   } else {
-    $dateField.val(model.items[pos].itemDate);
+    $dateField.val(model.items[pos].DateTime);
   }
   return $dateField;
 };
 
 view.createTimeField = function (pos) {
   var $timeField = $('<input type="text" class="edit-time input column is-1">');
-  if (model.items[pos].itemDate === '') {
+  if (model.items[pos].DateTime === '') {
     $timeField.attr('placeholder', 'Time');
   } else {
-    $timeField.val(model.items[pos].itemDate);
+    $timeField.val(model.items[pos].DateTime);
   }
   return $timeField;
 };
@@ -311,8 +311,8 @@ handlers.addItem = function () {
   $inputField.val('');
   $timeField.val('');
 
-  if (!dateUtils.isBeforeToday(itemTime)) {
-    model.timers[nextID] = setTimeout(function () {
+  if (!dateUtils.isBeforeNow(itemTime)) {
+    handlers.timers[nextID] = setTimeout(function () {
       view.createNotification('expired');
       view.displayItems();
     }, expiryTime);
@@ -344,7 +344,7 @@ handlers.saveItem = function (pos) {
   var editInputTime = timePicker.get('select', 'HH:i A');
   var editedTime = dateUtils.fmtDueDate(editInputDate + ' ' + editInputTime);
   var item = model.items[pos];
-  var timers = model.timers;
+  var timers = handlers.timers;
   var expiryTime = editedTime - dateUtils.todayInMS();
 
   if (editInputTxt === '') {
@@ -358,9 +358,10 @@ handlers.saveItem = function (pos) {
 
     if (item.itemID in timers) {
       clearTimeout(timers[item.itemID]);
+      delete timers[item.itemID];
     }
 
-    if (!dateUtils.isBeforeToday(editedTime)) {
+    if (!dateUtils.isBeforeNow(editedTime)) {
       timers[item.itemID] = setTimeout(function () {
         view.createNotification('expired');
         view.displayItems();
@@ -372,12 +373,13 @@ handlers.saveItem = function (pos) {
 
 handlers.deleteItem = function (pos) {
   var item = model.items[pos];
-  var timers = model.timers;
+  var timers = handlers.timers;
 
   model.deleteItem(pos);
 
   if (item.itemID in timers) {
     clearTimeout(timers[item.itemID]);
+    delete timers[item.itemID];
   }
 
   view.displayItems();
