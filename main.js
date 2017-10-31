@@ -324,8 +324,6 @@ handlers.addItem = function () {
 
 handlers.changeItem = function (pos) {
   var $itemID = $('#' + pos);
-  var item = model.items[pos];
-  var timers = model.timers;
   $itemID.html('');
   $itemID.append(view.createInputField(pos));
   $itemID.append(view.createDateField(pos));
@@ -334,10 +332,6 @@ handlers.changeItem = function (pos) {
   $itemID.append(view.createDeleteBtn());
   $('.edit-date').pickadate();
   $('.edit-time').pickatime();
-
-  if (item.itemID in timers) {
-    clearTimeout(timers[item.itemID]);
-  }
 };
 
 handlers.saveItem = function (pos) {
@@ -361,6 +355,10 @@ handlers.saveItem = function (pos) {
     view.createNotification('time');
   } else {
     model.changeItem(pos, editInputTxt, editedTime);
+
+    if (item.itemID in timers) {
+      clearTimeout(timers[item.itemID]);
+    }
 
     if (!dateUtils.isBeforeToday(editedTime)) {
       timers[item.itemID] = setTimeout(function () {
