@@ -1,7 +1,6 @@
 var model = {};
 var view = {};
 var handlers = {};
-var nextID = 1;
 var dateUtils = {
   today: function () {
     return moment();
@@ -34,18 +33,20 @@ var dateUtils = {
 
 model.items = [];
 handlers.timers = {};
+model.nextID = 1;
 
 model.addItem = function (text, date) {
   var item = {
     itemText: text,
     DateTime: date,
     completed: false,
-    itemID: nextID,
+    itemID: model.nextID,
     isActive: function () { return dateUtils.isAfterNow(this.DateTime) && !this.completed; },
     isUrgent: function () { return dateUtils.isNow(this.DateTime) && !this.completed; },
     isExpired: function () { return dateUtils.isBeforeNow(this.DateTime) && !this.completed; }
   };
   this.items.push(item);
+  model.nextID += 1;
 };
 
 model.count = function (itemType) {
