@@ -31,6 +31,47 @@ var dateUtils = {
   }
 };
 
+var itemStorage = (function () {
+  var setItem = function (item) {
+    return localStorage.setItem(item.itemID, JSON.stringify(item));
+  };
+
+  var getItem = function (itemID) {
+    return JSON.parse(localStorage.getItem(itemID));
+  };
+
+  var removeItem = function (itemID) {
+    return localStorage.removeItem(itemID);
+  };
+
+  var checkStorage = function () {
+    var i;
+    var currItem;
+    if (localStorage.length > 0) {
+      for (i = 1; i <= localStorage.length; i += 1) {
+        currItem = itemStorage.getItem(i);
+
+        currItem.isActive = function () { return dateUtils.isAfterNow(this.DateTime) && !this.completed; };
+
+        currItem.isUrgent = function () { return dateUtils.isNow(this.DateTime) && !this.completed; };
+
+        currItem.isExpired = function () { return dateUtils.isBeforeNow(this.DateTime) && !this.completed; };
+
+        currItem.DateTime = dateUtils.fmtDueDate(currItem.DateTime);
+        model.items.push(currItem);
+      }
+    }
+  };
+
+
+  return {
+    setItem: setItem,
+    getItem: getItem,
+    removeItem: removeItem,
+    checkStorage: checkStorage
+  };
+}());
+
 model.items = [];
 handlers.timers = {};
 model.nextID = 1;
@@ -45,8 +86,9 @@ model.addItem = function (text, date) {
     isUrgent: function () { return dateUtils.isNow(this.DateTime) && !this.completed; },
     isExpired: function () { return dateUtils.isBeforeNow(this.DateTime) && !this.completed; }
   };
+
   this.items.push(item);
-  model.nextID += 1;
+  itemStorage.setItem(item);
 };
 
 model.count = function (itemType) {
@@ -64,11 +106,14 @@ model.count = function (itemType) {
 };
 
 model.changeItem = function (pos, text, date) {
+  itemStorage.removeItem(pos);
   this.items[pos].itemText = text;
   this.items[pos].DateTime = date;
+  itemStorage.setItem(this.items[pos]);
 };
 
 model.deleteItem = function (pos) {
+  itemStorage.removeItem(pos);
   this.items.splice(pos, 1);
 };
 
@@ -251,6 +296,7 @@ view.enterListener = function () {
         handlers.addItem();
       }
     }
+
     setTimeout(function () {
       $('#item-txt').removeClass('is-danger');
       $('#date-txt').removeClass('is-warning');
@@ -313,11 +359,11 @@ handlers.addItem = function () {
   $timeField.val('');
 
   if (!dateUtils.isBeforeNow(itemTime)) {
-    handlers.timers[nextID] = setTimeout(function () {
+    handlers.timers[model.nextID] = setTimeout(function () {
       view.createNotification('expired');
       view.displayItems();
     }, expiryTime);
-    nextID += 1;
+    model.nextID += 1;
   }
 
   view.displayItems();
@@ -413,5 +459,7 @@ $(document).ready(function () {
   view.enterListener();
   view.toggleStates();
   handlers.sortItems();
+  itemStorage.checkStorage();
+  view.displayItems();
 }
 );
