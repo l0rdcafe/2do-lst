@@ -24,7 +24,7 @@ var dateUtils = {
     return dateVal.valueOf() - this.todayInMS() <= 0;
   },
   fmtDueDate: function (dateVal) {
-    return moment(dateVal, 'DD-MM-YYYY HH:mm');
+    return moment(dateVal, 'DD-MM-YYYY HH:mm a');
   },
   itemTimeInMS: function (timeVal) {
     return timeVal.valueOf();
@@ -33,36 +33,33 @@ var dateUtils = {
 
 var itemStorage = (function () {
   var setItem = function (item) {
-    return localStorage.setItem(item.itemID, JSON.stringify(item));
+    localStorage.setItem(item.itemID, JSON.stringify(item));
   };
 
   var getItem = function (itemID) {
     return JSON.parse(localStorage.getItem(itemID));
   };
 
-  var removeItem = function (itemID) {
-    return localStorage.removeItem(itemID);
+  var removeItem = function (item) {
+    localStorage.removeItem(item.itemID);
   };
 
   var checkStorage = function () {
-    var i;
     var currItem;
-    if (localStorage.length > 0) {
-      for (i = 1; i <= localStorage.length; i += 1) {
-        currItem = itemStorage.getItem(i);
+    if (localStorage.length !== model.items.length) {
+      Object.keys(localStorage).forEach(function (key) {
+        currItem = itemStorage.getItem(key);
 
         currItem.isActive = function () { return dateUtils.isAfterNow(this.DateTime) && !this.completed; };
 
-        currItem.isUrgent = function () { return dateUtils.isNow(this.DateTime) && !this.completed; };
-
         currItem.isExpired = function () { return dateUtils.isBeforeNow(this.DateTime) && !this.completed; };
 
-        currItem.DateTime = dateUtils.fmtDueDate(currItem.DateTime);
+        currItem.isUrgent = function () { return dateUtils.isNow(this.DateTime) && !this.completed; };
+
         model.items.push(currItem);
-      }
+      });
     }
   };
-
 
   return {
     setItem: setItem,
@@ -87,8 +84,9 @@ model.addItem = function (text, date) {
     isExpired: function () { return dateUtils.isBeforeNow(this.DateTime) && !this.completed; }
   };
 
-  this.items.push(item);
   itemStorage.setItem(item);
+  this.items.push(item);
+  model.nextID += 1;
 };
 
 model.count = function (itemType) {
@@ -106,15 +104,14 @@ model.count = function (itemType) {
 };
 
 model.changeItem = function (pos, text, date) {
-  itemStorage.removeItem(pos);
   this.items[pos].itemText = text;
   this.items[pos].DateTime = date;
   itemStorage.setItem(this.items[pos]);
 };
 
 model.deleteItem = function (pos) {
-  itemStorage.removeItem(pos);
   this.items.splice(pos, 1);
+  itemStorage.removeItem(pos);
 };
 
 model.toggleComplete = function (pos) {
@@ -177,7 +174,7 @@ view.createEditBtn = function () {
 
 view.createDateTxt = function (item) {
   var $dateTxt = $('<small class="column is-3"></small>');
-  var dueDate = item.DateTime.from(dateUtils.todayInMS());
+  var dueDate = dateUtils.fmtDueDate(item.DateTime).from(dateUtils.todayInMS());
   if (item.completed || this.todoScreen === 'Expired') {
     $dateTxt.addClass('strike');
   }
@@ -350,7 +347,7 @@ handlers.addItem = function () {
   var $inputTime = $timeField.pickatime('picker');
   var itemDate = $inputDate.get('select', 'dd-mm-yyyy');
   var timeInput = $inputTime.get('select', 'HH:i A');
-  var itemTime = dateUtils.fmtDueDate(itemDate + ' ' + timeInput, 'DD-MM-YYYY HH:mm a');
+  var itemTime = itemDate + ' ' + timeInput;
   var expiryTime = itemTime.valueOf() - dateUtils.todayInMS();
 
   model.addItem($textField.val(), itemTime);
@@ -358,12 +355,11 @@ handlers.addItem = function () {
   $inputField.val('');
   $timeField.val('');
 
-  if (!dateUtils.isBeforeNow(itemTime)) {
+  if (!dateUtils.isBeforeNow(dateUtils.fmtDueDate(itemTime))) {
     handlers.timers[model.nextID] = setTimeout(function () {
       view.createNotification('expired');
       view.displayItems();
     }, expiryTime);
-    model.nextID += 1;
   }
 
   view.displayItems();
@@ -389,7 +385,7 @@ handlers.saveItem = function (pos) {
   var picker = $(editInputField).pickadate('picker');
   var editInputDate = picker.get('select', 'dd-mm-yyyy');
   var editInputTime = timePicker.get('select', 'HH:i A');
-  var editedTime = dateUtils.fmtDueDate(editInputDate + ' ' + editInputTime);
+  var editedTime = editInputDate + ' ' + editInputTime;
   var item = model.items[pos];
   var timers = handlers.timers;
   var expiryTime = editedTime - dateUtils.todayInMS();
@@ -408,7 +404,7 @@ handlers.saveItem = function (pos) {
       delete timers[item.itemID];
     }
 
-    if (!dateUtils.isBeforeNow(editedTime)) {
+    if (!dateUtils.isBeforeNow(dateUtils.fmtDueDate(editedTime))) {
       timers[item.itemID] = setTimeout(function () {
         view.createNotification('expired');
         view.displayItems();
@@ -422,7 +418,7 @@ handlers.deleteItem = function (pos) {
   var item = model.items[pos];
   var timers = handlers.timers;
 
-  model.deleteItem(pos);
+  model.deleteItem(item);
 
   if (item.itemID in timers) {
     clearTimeout(timers[item.itemID]);
