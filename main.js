@@ -85,6 +85,8 @@ model.addItem = function (text, date) {
   this.items.push(item);
   itemStorage.setItem(item.itemID, item);
   model.nextID += 1;
+
+  return item;
 };
 
 model.createItem = function (text, timeText, id, completed) {
@@ -121,7 +123,8 @@ model.changeItem = function (pos, text, date) {
 };
 
 model.deleteItem = function (pos) {
-  var item = this.items.splice(pos, 1);
+  var item = this.items[pos];
+  this.items.splice(pos, 1);
   itemStorage.removeItem(item.itemID);
 };
 
@@ -366,18 +369,13 @@ handlers.addItem = function () {
   var timeInput = $inputTime.get('select', 'HH:i A');
   var itemTime = itemDate + ' ' + timeInput;
   var formattedItemTime = dateUtils.fmtDueDate(itemTime);
-  var expiryTime = formattedItemTime - dateUtils.todayInMS();
-
-  model.addItem($textField.val(), itemTime);
+  var item = model.addItem($textField.val(), itemTime);
   $textField.val('');
   $inputField.val('');
   $timeField.val('');
 
   if (!dateUtils.isBeforeNow(formattedItemTime)) {
-    handlers.timers[model.nextID] = setTimeout(function () {
-      view.createNotification('expired');
-      view.displayItems();
-    }, expiryTime);
+    handlers.timers[item.itemID] = handlers.scheduleTimer(item);
   }
 
   view.displayItems();
@@ -407,7 +405,6 @@ handlers.saveItem = function (pos) {
   var formattedEditedTime = dateUtils.fmtDueDate(editedTime);
   var item = model.items[pos];
   var timers = handlers.timers;
-  var expiryTime = formattedEditedTime - dateUtils.todayInMS();
 
   if (editInputTxt === '') {
     view.createNotification('text');
@@ -424,10 +421,7 @@ handlers.saveItem = function (pos) {
     }
 
     if (!dateUtils.isBeforeNow(formattedEditedTime)) {
-      timers[item.itemID] = setTimeout(function () {
-        view.createNotification('expired');
-        view.displayItems();
-      }, expiryTime);
+      timers[item.itemID] = handlers.scheduleTimer(item);
     }
     view.displayItems();
   }
