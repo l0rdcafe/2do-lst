@@ -375,7 +375,7 @@ handlers.addItem = function () {
   $timeField.val('');
 
   if (!dateUtils.isBeforeNow(formattedItemTime)) {
-    handlers.timers[item.itemID] = handlers.scheduleTimer(item);
+    handlers.scheduleTimer(item);
   }
 
   view.displayItems();
@@ -421,7 +421,7 @@ handlers.saveItem = function (pos) {
     }
 
     if (!dateUtils.isBeforeNow(formattedEditedTime)) {
-      timers[item.itemID] = handlers.scheduleTimer(item);
+      handlers.scheduleTimer(item);
     }
     view.displayItems();
   }
