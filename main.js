@@ -32,25 +32,40 @@ var dateUtils = {
 };
 
 var itemStorage = (function () {
-  var setItem = function (item) {
-    localStorage.setItem(item.itemID, JSON.stringify(item));
+  var setItem = function (key, item) {
+    localStorage.setItem(key, JSON.stringify({
+      itemText: item.itemText,
+      DateTime: item.DateTime._i,
+      completed: item.completed,
+      itemID: item.itemID
+    }));
   };
 
-  var getItem = function (itemID) {
-    return JSON.parse(localStorage.getItem(itemID));
+  var getItem = function (key) {
+    var keyData = JSON.parse(localStorage.getItem(key));
+    return model.createItem(keyData.itemText, keyData.DateTime, keyData.itemID, keyData.completed);
   };
 
-  var removeItem = function (item) {
-    localStorage.removeItem(item.itemID);
+  var removeItem = function (key) {
+    localStorage.removeItem(key);
   };
 
-  var checkStorage = function () {
-    var currItem;
-    if (localStorage.length !== model.items.length) {
+  var syncStorage = function () {
+    var item;
+    if (localStorage.length > 0) {
       Object.keys(localStorage).forEach(function (key) {
-        currItem = itemStorage.getItem(key);
-        model.addItem(currItem.itemText, currItem.DateTime);
+        item = itemStorage.getItem(key);
+        model.items.push(item);
+        handlers.scheduleTimer(item);
       });
+
+      model.nextID = _.max(model.items.map(function (i) {
+        return i.itemID;
+      })) + 1;
+
+      model.items = _.sortBy(model.items, function (i) { return i.itemID; });
+    } else {
+      model.nextID = 1;
     }
   };
 
@@ -58,27 +73,30 @@ var itemStorage = (function () {
     setItem: setItem,
     getItem: getItem,
     removeItem: removeItem,
-    checkStorage: checkStorage
+    syncStorage: syncStorage
   };
 }());
 
 model.items = [];
 handlers.timers = {};
-model.nextID = 1;
 
 model.addItem = function (text, date) {
-  var item = {
+  var item = model.createItem(text, date, this.nextID, false);
+  this.items.push(item);
+  itemStorage.setItem(item.itemID, item);
+  model.nextID += 1;
+};
+
+model.createItem = function (text, timeText, id, completed) {
+  return {
     itemText: text,
-    DateTime: dateUtils.fmtDueDate(date),
-    completed: false,
-    itemID: model.nextID,
+    DateTime: dateUtils.fmtDueDate(timeText),
+    completed: completed,
+    itemID: id,
     isActive: function () { return dateUtils.isAfterNow(this.DateTime) && !this.completed; },
     isUrgent: function () { return dateUtils.isNow(this.DateTime) && !this.completed; },
     isExpired: function () { return dateUtils.isBeforeNow(this.DateTime) && !this.completed; }
   };
-
-  this.items.push(item);
-  model.nextID += 1;
 };
 
 model.count = function (itemType) {
@@ -96,18 +114,21 @@ model.count = function (itemType) {
 };
 
 model.changeItem = function (pos, text, date) {
-  this.items[pos].itemText = text;
-  this.items[pos].DateTime = date;
-  itemStorage.setItem(this.items[pos]);
+  var item = this.items[pos];
+  item.itemText = text;
+  item.DateTime = dateUtils.fmtDueDate(date);
+  itemStorage.setItem(item.itemID, item);
 };
 
 model.deleteItem = function (pos) {
-  this.items.splice(pos, 1);
-  itemStorage.removeItem(pos);
+  var item = this.items.splice(pos, 1);
+  itemStorage.removeItem(item.itemID);
 };
 
 model.toggleComplete = function (pos) {
-  this.items[pos].completed = !this.items[pos].completed;
+  var item = this.items[pos];
+  item.completed = !item.completed;
+  itemStorage.setItem(item.itemID, item);
 };
 
 model.toggleAll = function () {
@@ -125,6 +146,10 @@ model.toggleAll = function () {
       item.completed = true;
     });
   }
+
+  this.items.forEach(function (item) {
+    itemStorage.setItem(item.itemID, item);
+  });
 };
 
 view.todoScreen = 'All';
@@ -343,13 +368,6 @@ handlers.addItem = function () {
   var formattedItemTime = dateUtils.fmtDueDate(itemTime);
   var expiryTime = formattedItemTime - dateUtils.todayInMS();
 
-  itemStorage.setItem({
-    itemText: $textField.val(),
-    DateTime: itemTime,
-    completed: false,
-    itemID: model.nextID
-  });
-
   model.addItem($textField.val(), itemTime);
   $textField.val('');
   $inputField.val('');
@@ -419,7 +437,7 @@ handlers.deleteItem = function (pos) {
   var item = model.items[pos];
   var timers = handlers.timers;
 
-  model.deleteItem(item);
+  model.deleteItem(pos);
 
   if (item.itemID in timers) {
     clearTimeout(timers[item.itemID]);
@@ -451,12 +469,19 @@ handlers.sortItems = function () {
     });
 };
 
+handlers.scheduleTimer = function (item) {
+  handlers.timers[item.itemID] = setTimeout(function () {
+    view.createNotification('expired');
+    view.displayItems();
+  }, item.DateTime - dateUtils.todayInMS());
+};
+
 $(document).ready(function () {
   view.setUpEvents();
   view.enterListener();
   view.toggleStates();
   handlers.sortItems();
-  itemStorage.checkStorage();
+  itemStorage.syncStorage();
   view.displayItems();
 }
 );
