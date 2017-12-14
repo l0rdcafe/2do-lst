@@ -78,14 +78,14 @@ var model = (function (dateUtils, itemStorage, _) {
 
   var syncStorage = function () {
     var itemDicts = itemStorage.getItemDicts();
-    var item;
 
     if (itemDicts.length === 0) {
       nextID = 1;
       items = [];
     } else {
       itemDicts.forEach(function (dict) {
-        item = itemStorage.getItem(dict.itemID);
+        var item = itemStorage.getItem(dict.itemID);
+        createItem(item.itemText, item.DateTime, item.itemID, item.completed);
         items.push(item);
       });
       items = _.sortBy(items, function (i) { return i.itemID; });

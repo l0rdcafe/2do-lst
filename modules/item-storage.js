@@ -1,4 +1,4 @@
-var itemStorage = (function (model, _) {
+var itemStorage = (function (_) {
   var setItem = function (key, item) {
     localStorage.setItem(key, JSON.stringify({
       itemText: item.itemText,
@@ -10,7 +10,7 @@ var itemStorage = (function (model, _) {
 
   var getItem = function (key) {
     var keyData = JSON.parse(localStorage.getItem(key));
-    return model.createItem(keyData.itemText, keyData.DateTime, keyData.itemID, keyData.completed);
+    return keyData;
   };
 
   var removeItem = function (key) {
@@ -30,4 +30,4 @@ var itemStorage = (function (model, _) {
     removeItem: removeItem,
     getItemDicts: getItemDicts
   };
-}(model, _));
+}(_));
