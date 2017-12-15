@@ -7,9 +7,9 @@ var view = (function (model, $, dateUtils) {
     if (item.completed) {
       $itemIcon.toggleClass('fa-circle-o fa-check-circle-o');
       $itemIcon.attr('id', 'complete');
-    } else if (todoScreen === 'Urgent') {
+    } else if (view.todoScreen === 'Urgent') {
       $itemIcon.addClass('fa-exclamation-triangle').removeClass('fa-circle-o');
-    } else if (todoScreen === 'Expired') {
+    } else if (view.todoScreen === 'Expired') {
       $itemIcon.addClass('fa-exclamation');
     }
     return $itemIcon;
@@ -70,11 +70,11 @@ var view = (function (model, $, dateUtils) {
     $('.list ul').html('');
 
     model.items.forEach(function (item, pos) {
-      var showAll = todoScreen === 'All';
-      var showActive = todoScreen === 'Active' && item.isActive();
-      var showCompleted = todoScreen === 'Completed' && item.completed;
-      var showUrgent = todoScreen === 'Urgent' && item.isUrgent();
-      var showExpired = todoScreen === 'Expired' && item.isExpired();
+      var showAll = view.todoScreen === 'All';
+      var showActive = view.todoScreen === 'Active' && item.isActive();
+      var showCompleted = view.todoScreen === 'Completed' && item.completed;
+      var showUrgent = view.todoScreen === 'Urgent' && item.isUrgent();
+      var showExpired = view.todoScreen === 'Expired' && item.isExpired();
 
       if (showAll || showActive || showCompleted || showUrgent || showExpired) {
         createItem(item, pos);
@@ -113,7 +113,7 @@ var view = (function (model, $, dateUtils) {
   var createTimeField = function (pos) {
     var $timeField = $('<input type="text" class="edit-time input column is-1">');
 
-    if (model.times[pos].DateTime === '') {
+    if (model.items[pos].DateTime === '') {
       $timeField.attr('placeholder', 'Due time');
     } else {
       $timeField.val(model.items[pos].DateTime);
@@ -123,14 +123,6 @@ var view = (function (model, $, dateUtils) {
 
   var createSaveBtn = function () {
     return $('<i id="save" class="fa fa-floppy-o column">');
-  };
-
-  var createEditTodo = function (pos) {
-    createInputField(pos);
-    createDateField(pos);
-    createTimeField(pos);
-    createSaveBtn();
-    createDeleteBtn();
   };
 
   var createNotification = function (type) {
@@ -159,7 +151,11 @@ var view = (function (model, $, dateUtils) {
     todoScreen: todoScreen,
     displayItems: displayItems,
     colorState: colorState,
-    createEditTodo: createEditTodo,
-    createNotification: createNotification
+    createNotification: createNotification,
+    createInputField: createInputField,
+    createDateField: createDateField,
+    createTimeField: createTimeField,
+    createSaveBtn: createSaveBtn,
+    createDeleteBtn: createDeleteBtn
   };
 }(model, $, dateUtils));

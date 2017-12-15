@@ -9,8 +9,7 @@ var itemStorage = (function (_) {
   };
 
   var getItem = function (key) {
-    var keyData = JSON.parse(localStorage.getItem(key));
-    return keyData;
+    return JSON.parse(localStorage.getItem(key));
   };
 
   var removeItem = function (key) {
@@ -21,7 +20,7 @@ var itemStorage = (function (_) {
     if (localStorage.length === 0) {
       return [];
     }
-    return _.values(localStorage);
+    return Object.keys(localStorage).map(getItem);
   };
 
   return {

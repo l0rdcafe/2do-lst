@@ -33,7 +33,11 @@ var handlers = (function (model, view, $, dateUtils) {
   var changeItem = function (pos) {
     var $itemID = $('#' + pos);
     $itemID.html('');
-    $itemID.append(view.createEditTodo(pos));
+    $itemID.append(view.createInputField(pos));
+    $itemID.append(view.createDateField(pos));
+    $itemID.append(view.createTimeField(pos));
+    $itemID.append(view.createSaveBtn(pos));
+    $itemID.append(view.createDeleteBtn());
     $('.edit-date').pickadate();
     $('.edit-time').pickatime();
   };
@@ -176,6 +180,7 @@ var handlers = (function (model, view, $, dateUtils) {
     items.forEach(function (item) {
       scheduleTimer(item);
     });
+    view.displayItems();
   };
 
   return {

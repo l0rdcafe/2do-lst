@@ -1,4 +1,4 @@
-var dateUtils = (function () {
+var dateUtils = (function (moment) {
   var today = function () {
     return moment();
   };
@@ -46,4 +46,4 @@ var dateUtils = (function () {
     fmtDueDate: fmtDueDate,
     itemTimeInMS: itemTimeInMS
   };
-}());
+}(moment));

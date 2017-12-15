@@ -3,10 +3,10 @@ var model = (function (dateUtils, itemStorage, _) {
   var nextID = 1;
 
   var addItem = function (text, date) {
-    var item = model.createItem(text, date, nextID, false);
-    items.push(item);
+    var item = createItem(text, date, model.nextID, false);
+    model.items.push(item);
     itemStorage.setItem(item.itemID, item);
-    nextID += 1;
+    model.nextID += 1;
 
     return item;
   };
@@ -32,46 +32,46 @@ var model = (function (dateUtils, itemStorage, _) {
     };
 
     if (itemType in filters) {
-      return items.filter(filters[itemType]).length;
+      return model.items.filter(filters[itemType]).length;
     }
     throw new Error(itemType + ' is not a filter');
   };
 
   var changeItem = function (pos, text, date) {
-    var item = items[pos];
+    var item = model.items[pos];
     item.itemText = text;
     item.DateTime = dateUtils.fmtDueDate(date);
     itemStorage.setItem(item.itemID, item);
   };
 
   var deleteItem = function (pos) {
-    var item = items[pos];
-    items.splice(pos, 1);
+    var item = model.items[pos];
+    model.items.splice(pos, 1);
     itemStorage.removeItem(item.itemID);
   };
 
   var toggleComplete = function (pos) {
-    var item = items[pos];
+    var item = model.items[pos];
     item.completed = !item.completed;
     itemStorage.setItem(item.itemID, item);
   };
 
   var toggleAll = function () {
-    var totalItems = items.length;
-    var completedItemsNum = items.filter(function (item) {
+    var totalItems = model.items.length;
+    var completedItemsNum = model.items.filter(function (item) {
       return item.completed;
     }).length;
 
     if (totalItems === completedItemsNum) {
-      items.forEach(function (item) {
+      model.items.forEach(function (item) {
         item.completed = false;
       });
     } else {
-      items.forEach(function (item) {
+      model.items.forEach(function (item) {
         item.completed = true;
       });
     }
-    items.forEach(function (item) {
+    model.items.forEach(function (item) {
       itemStorage.setItem(item.itemID, item);
     });
   };
@@ -80,19 +80,18 @@ var model = (function (dateUtils, itemStorage, _) {
     var itemDicts = itemStorage.getItemDicts();
 
     if (itemDicts.length === 0) {
-      nextID = 1;
-      items = [];
+      model.nextID = 1;
+      model.items = [];
     } else {
       itemDicts.forEach(function (dict) {
         var item = createItem(dict.itemText, dict.DateTime, dict.itemID, dict.completed);
-        console.log(item);
-        items.push(item);
+        model.items.push(item);
       });
 
-      items = _.sortBy(items, function (i) { return i.itemID; });
-      nextID = _.max(items.map(function (i) { return i.itemID; })) + 1;
+      model.items = _.sortBy(items, function (i) { return i.itemID; });
+      model.nextID = _.max(items.map(function (i) { return i.itemID; })) + 1;
     }
-    return items;
+    return model.items;
   };
 
   return {
@@ -104,7 +103,6 @@ var model = (function (dateUtils, itemStorage, _) {
     toggleComplete: toggleComplete,
     toggleAll: toggleAll,
     count: count,
-    createItem: createItem,
     syncStorage: syncStorage
   };
 }(dateUtils, itemStorage, _));
